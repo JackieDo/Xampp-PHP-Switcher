@@ -10,7 +10,7 @@ Available commands:
     list        List all PHP builds in repository.
     add         Add new PHP build into repository.
     remove      Remove specific PHP build in repository.
-    current     Show information about current PHP build.
+    info        Show information about current PHP build.
     show        Show information about specific PHP build.
     switch      Switch to specific PHP version.
     help        Display the help message.

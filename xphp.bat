@@ -149,7 +149,7 @@ if "%~1"=="install" goto install
 if "%~1"=="add" goto addVersion
 if "%~1"=="remove" goto removeVersion
 if "%~1"=="list" goto listVersions
-if "%~1"=="current" goto currentInfo
+if "%~1"=="info" goto currentInfo
 if "%~1"=="show" goto showInfo
 if "%~1"=="switch" goto switchVersion
 
