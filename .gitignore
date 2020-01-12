@@ -1,0 +1,9 @@
+/templates/xampp_config/*
+/vendor
+/test
+/tmp
+.DS_Store
+.php_cs.cache
+composer.phar
+composer.lock
+settings.ini

@@ -1,0 +1,26 @@
+{
+    "name": "jackiedo/xampp-php-switcher",
+    "description": "Allow to use and switch between different versions of PHP for Xampp on Windows OS.",
+    "keywords": [
+        "xampp",
+        "xampp-windows",
+        "php",
+        "php-switcher",
+        "php-switch",
+        "console"
+    ],
+    "license": "MIT",
+    "type": "project",
+    "require": {
+        "php": ">=5.4"
+    },
+    "scripts": {
+        "post-create-project-cmd": [
+            "xphp.bat install"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    }
+}
