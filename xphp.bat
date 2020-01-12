@@ -106,13 +106,13 @@ exit
 
 rem ---------------------------------------------
 :addVersion
-php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "addVersion" %~2
+php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "addVersion" "%~2"
 call :clearEnvVars
 exit /B %errorLevel%
 
 rem ---------------------------------------------
 :removeVersion
-php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "removeVersion" %~2
+php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "removeVersion" "%~2"
 call :clearEnvVars
 exit /B %errorLevel%
 
@@ -130,13 +130,13 @@ exit /B %errorLevel%
 
 rem ---------------------------------------------
 :showInfo
-php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "showInfo" %~2
+php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "showInfo" "%~2"
 call :clearEnvVars
 exit /B %errorLevel%
 
 rem ---------------------------------------------
 :switchVersion
-php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "switchVersion" %~2
+php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "switchVersion" "%~2"
 call :clearEnvVars
 exit /B %errorLevel%
 
