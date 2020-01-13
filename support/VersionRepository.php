@@ -10,15 +10,15 @@ class VersionRepository
 {
     const STORAGE_NAME_PATTERN = '{{version}}';
 
-    protected $debug    = true;
-    protected $platform = null;
-    protected $location = null;
-    protected $versions = [];
+    protected $debug        = true;
+    protected $architecture = null;
+    protected $location     = null;
+    protected $versions     = [];
 
-    public function __construct($platform, $location = null, $debugStatus = true)
+    public function __construct($architecture, $location = null, $debugStatus = true)
     {
         $this->setDebug($debugStatus);
-        $this->setPlatform($platform);
+        $this->setArchitecture($architecture);
         $this->setLocation($location);
     }
 
@@ -37,17 +37,9 @@ class VersionRepository
         return null;
     }
 
-    public function setPlatform($platform)
+    public function setArchitecture($architecture)
     {
-        if (! in_array($platform, ['x86', 'x64'])) {
-            if ($this->debug) {
-                throw new Exception('The "platform" property only accept values: [x86|x64].');
-            }
-
-            return $this;
-        }
-
-        $this->platform = $platform;
+        $this->architecture = $architecture;
 
         return $this;
     }
@@ -146,12 +138,12 @@ class VersionRepository
             }
         }
 
-        $buildPlatform = (array_key_exists('buildPlatform', $predefined)) ? $predefined['buildPlatform'] : get_platform_phpdir($source);
+        $architecture = (array_key_exists('architecture', $predefined)) ? $predefined['architecture'] : get_architecture_phpdir($source);
 
         if ($validityCheck) {
-            if (!$this->platform != $buildPlatform) {
+            if (!$this->architecture != $architecture) {
                 if ($this->debug) {
-                    throw new Exception('The build at "' . $source . '" is not compatible with this storage platform');
+                    throw new Exception('The build at "' . $source . '" is not compatible with this storage architecture');
                 }
 
                 return [
@@ -199,20 +191,20 @@ class VersionRepository
         }
 
         @file_put_contents($storagePath . DS . '.version', $buildVersion);
-        @file_put_contents($storagePath . DS . '.platform', $buildPlatform);
+        @file_put_contents($storagePath . DS . '.architecture', $architecture);
         @file_put_contents($storagePath . DS . '.imported', null);
 
         $this->versions[$buildVersion] = [
-            'storagePath'   => $storagePath,
-            'buildPlatform' => $buildPlatform
+            'storagePath'  => $storagePath,
+            'architecture' => $architecture
         ];
 
         return [
             'error' => 0,
             'data'  => [
-                'buildVersion'  => $buildVersion,
-                'storagePath'   => $storagePath,
-                'buildPlatform' => $buildPlatform
+                'buildVersion' => $buildVersion,
+                'storagePath'  => $storagePath,
+                'architecture' => $architecture
             ]
         ];
     }
@@ -356,15 +348,15 @@ class VersionRepository
 
             $storagePath = $location . DS . $item;
 
-            if (is_file($storagePath . DS . '.platform')) {
-                $buildPlatform = @file_get_contents($storagePath . DS . '.platform');
+            if (is_file($storagePath . DS . '.architecture')) {
+                $architecture = @file_get_contents($storagePath . DS . '.architecture');
             } else {
-                $buildPlatform = get_platform_phpdir($storagePath);
+                $architecture = get_architecture_phpdir($storagePath);
 
-                @file_put_contents($storagePath . DS . '.platform', $buildPlatform);
+                @file_put_contents($storagePath . DS . '.architecture', $architecture);
             }
 
-            if ($this->platform != $buildPlatform) {
+            if ($this->architecture != $architecture) {
                 continue;
             }
 
@@ -377,8 +369,8 @@ class VersionRepository
             }
 
             $avaiableVersions[$buildVersion] = [
-                'storagePath'   => $storagePath,
-                'buildPlatform' => $buildPlatform
+                'storagePath'  => $storagePath,
+                'architecture' => $architecture
             ];
         }
 

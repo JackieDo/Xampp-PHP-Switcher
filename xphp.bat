@@ -2,6 +2,8 @@
 title Xampp PHP Switcher
 setlocal EnableExtensions EnableDelayedExpansion
 
+cd /D %~dp0
+
 rem ---------------------------------------------
 for /F "tokens=* USEBACKQ" %%v in (`where php`) do (
     if not exist "%%v" goto phpBinNotFound
@@ -123,12 +125,6 @@ call :clearEnvVars
 exit /B %errorLevel%
 
 rem ---------------------------------------------
-:currentInfo
-php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "currentInfo"
-call :clearEnvVars
-exit /B %errorLevel%
-
-rem ---------------------------------------------
 :showInfo
 php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "showInfo" "%~2"
 call :clearEnvVars
@@ -149,8 +145,7 @@ if "%~1"=="install" goto install
 if "%~1"=="add" goto addVersion
 if "%~1"=="remove" goto removeVersion
 if "%~1"=="list" goto listVersions
-if "%~1"=="info" goto currentInfo
-if "%~1"=="show" goto showInfo
+if "%~1"=="info" goto showInfo
 if "%~1"=="switch" goto switchVersion
 
 rem Call command with unknown param -------------

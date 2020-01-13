@@ -117,7 +117,7 @@ class Application
         $this->paths['httpdXampp']    = $this->paths['apacheDir'] . '\conf\extra\httpd-xampp.conf';
         $this->paths['httpdXamppPHP'] = $this->paths['apacheDir'] . '\conf\extra\httpd-xampp-php{{php_major_version}}.conf';
 
-        $this->versionRepository = new VersionRepository(get_platform_phpdir($this->paths['phpDir']), $this->paths['xamppDir'] . '\phpRepository', false);
+        $this->versionRepository = new VersionRepository(get_architecture_phpdir($this->paths['phpDir']), $this->paths['xamppDir'] . '\phpRepository', false);
 
         return $this;
     }

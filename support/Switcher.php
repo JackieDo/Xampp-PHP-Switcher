@@ -11,7 +11,7 @@ class Switcher extends Application
 {
     protected $currentStoragePath;
     protected $currentVersion;
-    protected $currentPlatform;
+    protected $currentArchitecture;
     protected $versions = [];
 
     public function __construct()
@@ -28,38 +28,20 @@ class Switcher extends Application
             $this->requireInstall();
         }
 
-        $this->currentVersion  = get_version_phpdir($this->paths['phpDir']);
-        $this->currentPlatform = get_platform_phpdir($this->paths['phpDir']);
-        $this->versions        = &$this->versionRepository->versions;
-    }
-
-    public function currentInfo()
-    {
-        $isOriginalVersion = $this->isOriginalVersion($this->currentVersion);
-
-        Console::hrline();
-        Console::line('The current PHP build has the following information:');
-        Console::breakline();
-        Console::line('Version        : ' . $this->currentVersion . ' ('. (($isOriginalVersion) ? 'Built-in' : 'Add-on') . ' version)');
-        Console::line('Storage path   : ' . $this->currentStoragePath);
-        Console::line('Build platform : ' . $this->currentPlatform);
-
-        Console::breakline();
-        Console::hrline();
-        Console::line('The result of "php -v" command is as follows:');
-        Console::breakline();
-
-        exec('"' . $this->paths['phpDir'] . '\php.exe' . '" -n -v', $outputArr);
-        Console::line(implode(PHP_EOL, $outputArr));
-
-        Console::breakline();
-        Console::hrline();
-        Console::terminate('Your request is completed.');
+        $this->currentVersion      = get_version_phpdir($this->paths['phpDir']);
+        $this->currentArchitecture = get_architecture_phpdir($this->paths['phpDir']);
+        $this->versions            = &$this->versionRepository->versions;
     }
 
     public function showInfo($version = null)
     {
-        $version = $this->tryGetVersion($version, 'Choose one of the following builds to show details:');
+        if ($version == 'current' || (empty($version) && count($this->versions) == 1)) {
+            $version = $this->currentVersion;
+            $message = 'The current PHP build has the following information:';
+        } else {
+            $version = $this->getVersionOrList($version, 'Choose one of the following builds to show details:');
+            $message = 'The PHP build you require has the following information:';
+        }
 
         if (! array_key_exists($version, $this->versions)) {
             Console::terminate('Sorry! Do not found any PHP version that you entered.', 1);
@@ -67,20 +49,14 @@ class Switcher extends Application
 
         $isOriginalVersion = $this->isOriginalVersion($version);
 
-        Console::hrline();
-        Console::line('The PHP build you require has the following information:');
+        Console::line($message);
         Console::breakline();
-        Console::line('Version        : ' . $version . ' ('. (($isOriginalVersion) ? 'Built-in' : 'Add-on') . ' version)');
-        Console::line('Storage path   : ' . $this->versions[$version]['storagePath']);
-        Console::line('Build platform : ' . $this->versions[$version]['buildPlatform']);
-
-        Console::breakline();
-        Console::hrline();
-        Console::line('The result of "php -v" command is as follows:');
-        Console::breakline();
-
-        exec('"' . $this->versions[$version]['storagePath'] . '\php.exe' . '" -n -v', $outputArr);
-        Console::line(implode(PHP_EOL, $outputArr));
+        Console::line('Version      : ' . $version . ' ('. (($isOriginalVersion) ? 'Built-in' : 'Add-on') . ' version)');
+        Console::line('Storage path : ' . $this->versions[$version]['storagePath']);
+        Console::line('Compiler     : ' . get_compiler_phpdir($this->versions[$version]['storagePath']));
+        Console::line('Architecture : ' . $this->versions[$version]['architecture'] . ' bit');
+        Console::line('Build date   : ' . get_builddate_phpdir($this->versions[$version]['storagePath']));
+        Console::line('Zend version : ' . get_zendversion_phpdir($this->versions[$version]['storagePath']));
 
         Console::breakline();
         Console::hrline();
@@ -153,32 +129,50 @@ class Switcher extends Application
             Console::terminate(null, 1);
         }
 
-        $newPlatform = get_platform_phpdir($source);
-        $newVersion  = get_version_phpdir($source);
-
-        if ($newPlatform != $this->currentPlatform) {
+        $architecture = get_architecture_phpdir($source);
+        if ($architecture != $this->currentArchitecture) {
             Console::line('The directory that you provided is not compatible with your Xampp.');
             Console::line('Cancel the adding process.');
             Console::breakline();
             Console::terminate(null, 1);
         }
 
-        if (array_key_exists($newVersion, $this->versions)) {
+        $version = get_version_phpdir($source);
+        if (array_key_exists($version, $this->versions)) {
             Console::line('The directory you provided contains the PHP version you already have.');
             Console::line('No need to add this version.');
             Console::breakline();
             Console::terminate();
         }
 
+        $compiler    = get_compiler_phpdir($source);
+        $buildDate   = get_builddate_phpdir($source);
+        $zendVersion = get_zendversion_phpdir($source);
+
+        Console::line('The PHP build you provided has the following information:');
+        Console::breakline();
+        Console::line('Version      : ' . $version);
+        Console::line('Compiler     : ' . $compiler);
+        Console::line('Architecture : ' . $architecture . ' bit');
+        Console::line('Build date   : ' . $buildDate);
+        Console::line('Zend version : ' . $zendVersion);
+        Console::breakline();
+
+        if (! Console::confirm('Do you want to continue the adding process?')) {
+            Console::breakline();
+            Console::terminate('The action is canceled by user.');
+        }
+
+        Console::breakline();
         Console::hrline();
-        Console::line('Start adding new PHP version.');
+        Console::line('Start adding new PHP build.');
         Console::breakline();
 
         // Copy into repository
         $message = 'Copying directory of new PHP build into the repository...';
         Console::line($message, false);
 
-        $importResult = $this->versionRepository->import($source, ['buildPlatform' => $newPlatform, 'buildVersion' => $newVersion], false);
+        $importResult = $this->versionRepository->import($source, ['architecture' => $architecture, 'buildVersion' => $version], false);
 
         if ($importResult['error_code'] != 0) {
             Console::line('Failed', true, max(77 - strlen($message), 1));
@@ -186,14 +180,14 @@ class Switcher extends Application
             Console::terminate(null, 1);
         }
 
-        $newStoragePath = $importResult['data']['storagePath'];
+        $storagePath = $importResult['data']['storagePath'];
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
         // Standardize paths
         $message = 'Standardize paths in new PHP build to be compatible with Xampp...';
         Console::line($message, false);
 
-        $standardizedPath   = is_file($newStoragePath . '\.standardized') ? @file_get_contents($newStoragePath . '\.standardized') : null;
+        $standardizedPath   = is_file($storagePath . '\.standardized') ? @file_get_contents($storagePath . '\.standardized') : null;
         $standardizeActions = [
             [
                 'type'        => 'replace',
@@ -212,47 +206,42 @@ class Switcher extends Application
             ]
         ];
 
-        $standardizeResult = $this->versionRepository->edit($newVersion, $standardizeActions, false);
+        $standardizeResult = $this->versionRepository->edit($version, $standardizeActions, false);
 
         if (! $standardizeResult) {
             Console::line('Failed', true, max(77 - strlen($message), 1));
             Console::breakline();
             Console::line('Removing recently added PHP build...');
-            $this->versionRepository->remove($newVersion, false);
+            $this->versionRepository->remove($version, false);
             Console::terminate(null, 1);
         }
 
-        @file_put_contents($newStoragePath . '\.standardized', $this->paths['xamppDir']);
+        @file_put_contents($storagePath . '\.standardized', $this->paths['xamppDir']);
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
         // Create httpd-xamm-php{{php_major_version}}.conf
         $message = 'Creating the "httpd-xampp.conf" file specific to the new PHP build...';
         Console::line($message, false);
 
-        $newMajorVersion = get_major_phpversion($newVersion);
-        $configFile      = str_replace('{{php_major_version}}', $newMajorVersion, $this->paths['httpdXamppPHP']);
+        $phpMajorVersion = get_major_phpversion($version);
+        $configFile      = str_replace('{{php_major_version}}', $phpMajorVersion, $this->paths['httpdXamppPHP']);
 
         if (! is_file($configFile)) {
             $configContent = @file_get_contents($this->paths['httpdXamppTemplate']);
-            @file_put_contents($configFile, str_replace('{{php_major_version}}', $newMajorVersion, $configContent));
+            @file_put_contents($configFile, str_replace('{{php_major_version}}', $phpMajorVersion, $configContent));
         }
 
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
         // Notify adding result
         Console::breakline();
-        Console::hrline();
-        Console::line('The recently added PHP build has the following information:');
-        Console::breakline();
-        Console::line('Version        : ' . $newVersion);
-        Console::line('Storage path   : ' . $newStoragePath);
-        Console::line('Build platform : ' . $newPlatform);
+        Console::line('New PHP build has been added to the repository at: ' . $storagePath);
 
         // Ask to add more
         Console::breakline();
         Console::hrline();
 
-        $addMore = Console::confirm('Do you want to add another PHP version');
+        $addMore = Console::confirm('Do you want to add another PHP build?');
 
         if ($addMore) {
             Console::breakline();
@@ -266,7 +255,7 @@ class Switcher extends Application
 
     public function removeVersion($version = null)
     {
-        $version = $this->tryGetVersion($version, 'You can choose one of the following builds to remove:');
+        $version = $this->getVersionOrList($version, 'You can choose one of the following builds to remove:', false);
 
         if (! array_key_exists($version, $this->versions)) {
             Console::terminate('Sorry! Do not found any PHP version that you entered.', 1);
@@ -338,7 +327,7 @@ class Switcher extends Application
 
     public function switchVersion($version = null)
     {
-        $version = $this->tryGetVersion($version, 'You can choose one of the following builds to use:');
+        $version = $this->getVersionOrList($version, 'You can choose one of the following builds to switch to:', false);
 
         if (! array_key_exists($version, $this->versions)) {
             Console::terminate('Sorry! Do not found any PHP version that you entered.', 1);
@@ -420,7 +409,7 @@ class Switcher extends Application
         Console::terminate(null, 1);
     }
 
-    private function tryGetVersion($version = null, $message = null, $notifyCurrentVersion = true)
+    private function getVersionOrList($version = null, $message = null, $includeCurrent = true)
     {
         if (is_phpversion($version)) {
             return $version;
@@ -428,7 +417,7 @@ class Switcher extends Application
 
         $message = $message ?: 'Please choose one of the following versions:';
 
-        if ($notifyCurrentVersion) {
+        if (! $includeCurrent) {
             Console::line('You are running PHP ' . $this->currentVersion, false);
 
             if ($this->isOriginalVersion($this->currentVersion)) {
@@ -441,7 +430,7 @@ class Switcher extends Application
             Console::breakline();
         }
 
-        $options     = $this->makeOptionList();
+        $options     = $this->makeVersionList($includeCurrent);
         $totalOption = count($options);
 
         if ($totalOption == 0) {
@@ -471,9 +460,15 @@ class Switcher extends Application
             Console::line($col_3_content, false);
 
             if ($this->isOriginalVersion($version)) {
-                Console::line('-  Built-in');
+                Console::line('-  Built-in', false);
             } else {
-                Console::line('-  Add-on');
+                Console::line('-  Add-on', false);
+            }
+
+            if ($this->isCurrentVersion($version)) {
+                Console::line(', in use');
+            } else {
+                Console::breakline();
             }
         }
 
@@ -508,14 +503,18 @@ class Switcher extends Application
         return $options[$selection];
     }
 
-    private function makeOptionList()
+    private function makeVersionList($includeCurrent = true)
     {
         $options  = [];
         $startNum = 1;
 
         foreach ($this->versions as $version => $info) {
-            if (! $this->isCurrentVersion($version)) {
+            if ($includeCurrent) {
                 $options[$startNum++] = $version;
+            } else {
+                if (! $this->isCurrentVersion($version)) {
+                    $options[$startNum++] = $version;
+                }
             }
         }
 

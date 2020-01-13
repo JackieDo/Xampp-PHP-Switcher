@@ -170,7 +170,7 @@ class Installer extends Application
         // Store detected informations of current PHP
         @file_put_contents($this->paths['phpDir'] . '\.standardized', $this->paths['xamppDir']);
         @file_put_contents($this->paths['phpDir'] . '\.version', $phpVersion);
-        @file_put_contents($this->paths['phpDir'] . '\.platform', get_platform_phpdir($this->paths['phpDir']));
+        @file_put_contents($this->paths['phpDir'] . '\.architecture', get_architecture_phpdir($this->paths['phpDir']));
 
         // Create temporary files to continue config in batch file
         @file_put_contents($this->paths['tmpDir'] . '\.phpdir', $this->paths['phpDir']);

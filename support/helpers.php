@@ -95,28 +95,59 @@ if (! function_exists('get_version_phpdir')) {
     }
 }
 
-if (! function_exists('get_platform_phpdir')) {
-    function get_platform_phpdir($dirPath) {
+if (! function_exists('get_architecture_phpdir')) {
+    function get_architecture_phpdir($dirPath) {
         if (! maybe_phpdir($dirPath)) {
             return null;
         }
 
-        $platform = 'x86';
+        return exec('"' . $dirPath . DIRECTORY_SEPARATOR . 'php.exe" -n -r "echo (PHP_INT_SIZE * 8);"');
+    }
+}
 
-        exec('"' . $dirPath . DIRECTORY_SEPARATOR . 'php.exe" -n -v', $outputArr);
-
-        foreach ($outputArr as $line) {
-            $matches = null;
-
-            preg_match("/x86|x64/", $line, $matches);
-
-            if ($matches[0]) {
-                $platform = $matches[0];
-                break;
-            }
+if (! function_exists('get_compiler_phpdir')) {
+    function get_compiler_phpdir($dirPath) {
+        if (! maybe_phpdir($dirPath)) {
+            return null;
         }
 
-        return $platform;
+        $compiler = 'Unknown';
+
+        exec('"' . $dirPath . DIRECTORY_SEPARATOR . 'php.exe" -n -i | findstr /C:"Compiler"', $output);
+
+        if (strpos($output[0], ' => ')) {
+            $compiler = explode(' => ', $output[0])[1];
+        }
+
+        return $compiler;
+    }
+}
+
+if (! function_exists('get_builddate_phpdir')) {
+    function get_builddate_phpdir($dirPath) {
+        if (! maybe_phpdir($dirPath)) {
+            return null;
+        }
+
+        $buildDate = 'Unknown';
+
+        exec('"' . $dirPath . DIRECTORY_SEPARATOR . 'php.exe" -n -i | findstr /C:"Build Date"', $output);
+
+        if (strpos($output[0], ' => ')) {
+            $buildDate = explode(' => ', $output[0])[1];
+        }
+
+        return $buildDate;
+    }
+}
+
+if (! function_exists('get_zendversion_phpdir')) {
+    function get_zendversion_phpdir($dirPath) {
+        if (! maybe_phpdir($dirPath)) {
+            return null;
+        }
+
+        return exec('"' . $dirPath . DIRECTORY_SEPARATOR . 'php.exe" -n -r "echo zend_version();"');
     }
 }
 

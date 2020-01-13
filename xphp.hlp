@@ -10,8 +10,7 @@ Available commands:
     list        List all PHP builds in repository.
     add         Add new PHP build into repository.
     remove      Remove specific PHP build in repository.
-    info        Show information about current PHP build.
-    show        Show information about specific PHP build.
+    info        Show information about specific PHP build.
     switch      Switch to specific PHP version.
     help        Display the help message.
 
@@ -22,6 +21,13 @@ Notes:
       asked if needed.
 
 Examples:
+    xphp info current
+    - Will show information about the current PHP build.
+
+    xphp show 7.1.9
+    - Will show information about the PHP build that has
+      version "7.1.9"
+
     xphp switch 5.6.40
     - Will switch PHP version from the current version
       to version 5.6.40
