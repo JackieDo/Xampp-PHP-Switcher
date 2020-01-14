@@ -139,7 +139,6 @@ class VersionRepository
         }
 
         $architecture = (array_key_exists('architecture', $predefined)) ? $predefined['architecture'] : get_architecture_phpdir($source);
-
         if ($validityCheck) {
             if (!$this->architecture != $architecture) {
                 if ($this->debug) {
@@ -153,10 +152,9 @@ class VersionRepository
             }
         }
 
-        $buildVersion = (array_key_exists('buildVersion', $predefined)) ? $predefined['buildVersion'] : get_version_phpdir($source);
-
+        $version = (array_key_exists('version', $predefined)) ? $predefined['version'] : get_version_phpdir($source);
         if ($validityCheck) {
-            if (array_key_exists($buildVersion, $this->versions)) {
+            if (array_key_exists($version, $this->versions)) {
                 if ($this->debug) {
                     throw new Exception('Version of the build at "' . $source . '" coincides with the existing version.');
                 }
@@ -168,7 +166,10 @@ class VersionRepository
             }
         }
 
-        $storagePath = $this->buildStoragePath($buildVersion);
+        $compiler    = (array_key_exists('compiler', $predefined)) ? $predefined['compiler'] : get_compiler_phpdir($source);
+        $buildDate   = (array_key_exists('buildDate', $predefined)) ? $predefined['buildDate'] : get_builddate_phpdir($source);
+        $zendVersion = (array_key_exists('zendVersion', $predefined)) ? $predefined['zendVersion'] : get_zendversion_phpdir($source);
+        $storagePath = $this->buildStoragePath($version);
 
         if (! $storagePath) {
             return [
@@ -190,21 +191,38 @@ class VersionRepository
             ];
         }
 
-        @file_put_contents($storagePath . DS . '.version', $buildVersion);
-        @file_put_contents($storagePath . DS . '.architecture', $architecture);
-        @file_put_contents($storagePath . DS . '.imported', null);
+        $repoSettings = [
+            'BuildInfo'     => [],
+            'RepoImporting' => []
+        ];
 
-        $this->versions[$buildVersion] = [
+        if (is_file($storagePath . '\.repo')) {
+            $repoSettings = @parse_ini_file($storagePath . '\.repo', true);
+        }
+
+        $repoSettings['BuildInfo']['Version']        = $version;
+        $repoSettings['BuildInfo']['Architecture']   = $architecture;
+        $repoSettings['BuildInfo']['Compiler']       = $compiler;
+        $repoSettings['BuildInfo']['BuildDate']      = $buildDate;
+        $repoSettings['BuildInfo']['ZendVersion']    = $zendVersion;
+        $repoSettings['RepoImporting']['AddOnBuild'] = '1';
+
+        @create_ini_file($storagePath . '\.repo', $repoSettings, true);
+
+        $this->versions[$version] = [
             'storagePath'  => $storagePath,
-            'architecture' => $architecture
+            'architecture' => $architecture,
+            'compiler'     => $compiler,
+            'buildDate'    => $buildDate,
+            'zendVersion'  => $zendVersion,
+            'isAddOnBuild' => true
         ];
 
         return [
             'error' => 0,
             'data'  => [
-                'buildVersion' => $buildVersion,
                 'storagePath'  => $storagePath,
-                'architecture' => $architecture
+                'repoSettings' => $repoSettings
             ]
         ];
     }
@@ -220,7 +238,7 @@ class VersionRepository
                 return false;
             }
 
-            if (! $this->isImported($version)) {
+            if (! $this->isAddOnBuild($version)) {
                 if ($this->debug) {
                     throw new Exception('The version "' . $version . '" is not an imported build.');
                 }
@@ -256,7 +274,7 @@ class VersionRepository
                 return false;
             }
 
-            if (! $this->isImported($version)) {
+            if (! $this->isAddOnBuild($version)) {
                 if ($this->debug) {
                     throw new Exception('The version "' . $version . '" is not an imported build. No editing allowed.');
                 }
@@ -320,9 +338,9 @@ class VersionRepository
         return array_key_exists($version, $this->versions);
     }
 
-    public function isImported($version)
+    public function isAddOnBuild($version)
     {
-        return is_file($this->versions[$version]['storagePath'] . DS . '.imported');
+        return $this->versions[$version]['isAddOnBuild'];
     }
 
     private function loadVersions()
@@ -346,31 +364,59 @@ class VersionRepository
                 continue;
             }
 
-            $storagePath = $location . DS . $item;
+            $storagePath    = $location . DS . $item;
+            $needUpdateInfo = true;
+            $repoSettings       = [
+                'BuildInfo' => []
+            ];
 
-            if (is_file($storagePath . DS . '.architecture')) {
-                $architecture = @file_get_contents($storagePath . DS . '.architecture');
-            } else {
-                $architecture = get_architecture_phpdir($storagePath);
-
-                @file_put_contents($storagePath . DS . '.architecture', $architecture);
+            if (is_file($storagePath . '\.repo')) {
+                $repoSettings   = @parse_ini_file($storagePath . '\.repo', true);
+                $needUpdate = false;
             }
 
-            if ($this->architecture != $architecture) {
+            $hasBuildInfo = array_key_exists('BuildInfo', $repoSettings);
+
+            if (!$hasBuildInfo || !array_key_exists('Version', $repoSettings['BuildInfo'])) {
+                $repoSettings['BuildInfo']['Version'] = get_version_phpdir($storagePath);
+                $needUpdateInfo = true;
+            }
+
+            if (!$hasBuildInfo || !array_key_exists('Architecture', $repoSettings['BuildInfo'])) {
+                $repoSettings['BuildInfo']['Architecture'] = get_architecture_phpdir($storagePath);
+                $needUpdateInfo = true;
+            }
+
+            if ($repoSettings['BuildInfo']['Architecture'] != $this->architecture) {
                 continue;
             }
 
-            if (is_file($storagePath . DS . '.version')) {
-                $buildVersion = @file_get_contents($storagePath . DS . '.version');
-            } else {
-                $buildVersion = get_version_phpdir($storagePath);
-
-                @file_put_contents($storagePath . DS . '.version', $buildVersion);
+            if (!$hasBuildInfo || !array_key_exists('Compiler', $repoSettings['BuildInfo'])) {
+                $repoSettings['BuildInfo']['Compiler'] = get_compiler_phpdir($storagePath);
+                $needUpdateInfo = true;
             }
 
-            $avaiableVersions[$buildVersion] = [
+            if (!$hasBuildInfo || !array_key_exists('BuildDate', $repoSettings['BuildInfo'])) {
+                $repoSettings['BuildInfo']['BuildDate'] = get_builddate_phpdir($storagePath);
+                $needUpdateInfo = true;
+            }
+
+            if (!$hasBuildInfo || !array_key_exists('ZendVersion', $repoSettings['BuildInfo'])) {
+                $repoSettings['BuildInfo']['ZendVersion'] = get_zendversion_phpdir($storagePath);
+                $needUpdateInfo = true;
+            }
+
+            if ($needUpdateInfo) {
+                @create_ini_file($storagePath . '\.repo', $repoSettings, true);
+            }
+
+            $avaiableVersions[$repoSettings['BuildInfo']['Version']] = [
                 'storagePath'  => $storagePath,
-                'architecture' => $architecture
+                'architecture' => $repoSettings['BuildInfo']['Architecture'],
+                'compiler'     => $repoSettings['BuildInfo']['Compiler'],
+                'buildDate'    => $repoSettings['BuildInfo']['BuildDate'],
+                'zendVersion'  => $repoSettings['BuildInfo']['ZendVersion'],
+                'isAddOnBuild' => (bool) $repoSettings['RepoImporting']['AddOnBuild']
             ];
         }
 

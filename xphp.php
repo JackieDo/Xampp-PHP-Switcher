@@ -46,10 +46,6 @@ if (isset($_SERVER['argv'][1])) {
             $witcher->removeVersion($_SERVER['argv'][2]);
             break;
 
-        case 'currentInfo':
-            $witcher->currentInfo();
-            break;
-
         case 'showInfo':
             $witcher->showInfo($_SERVER['argv'][2]);
             break;

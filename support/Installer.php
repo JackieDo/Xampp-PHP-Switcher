@@ -113,25 +113,43 @@ class Installer extends Application
 
     private function editHttpdXampp()
     {
-        $phpVersion      = get_version_phpdir($this->paths['phpDir']);
-        $phpMajorVersion = get_major_phpversion($phpVersion);
+        // Detecting informations of current PHP
+        $message = 'Detecting informations of current PHP build...';
+        Console::line($message, false);
 
-        $httpdXamppTemplate = $this->paths['httpdXamppTemplate'];
-        $httpdXampp         = $this->paths['httpdXampp'];
-        $backupFile         = dirname($httpdXampp) . '\backup\httpd-xampp.conf';
-        $httpdXamppPHP      = str_replace('{{php_major_version}}', $phpMajorVersion, $this->paths['httpdXamppPHP']);
+        $version      = get_version_phpdir($this->paths['phpDir']);
+        $majorVersion = get_major_phpversion($version);
+        $repoSettings = [
+            'BuildInfo' => [
+                'Version'      => $version,
+                'Architecture' => get_architecture_phpdir($this->paths['phpDir']),
+                'Compiler'     => get_compiler_phpdir($this->paths['phpDir']),
+                'BuildDate'    => get_builddate_phpdir($this->paths['phpDir']),
+                'ZendVersion'  => get_zendversion_phpdir($this->paths['phpDir']),
+            ],
+            'RepoImporting' => [
+                'PathStandardized' => $this->paths['xamppDir']
+            ]
+        ];
 
-        if (is_file($httpdXamppPHP)) {
-            $httpdXamppCloned = true;
-            $originContent    = @file_get_contents($httpdXamppPHP);
-        } else {
-            $httpdXamppCloned = false;
-            $originContent    = @file_get_contents($httpdXampp);
-        }
+        @create_ini_file($this->paths['phpDir'] . '\.repo', $repoSettings, true);
+        Console::line('Successful', true, max(73 - strlen($message), 1));
 
         // Create sample file
         $message = 'Creating sample file "httpd-xampp.conf.tpl"...';
         Console::line($message, false);
+
+        $httpdXampp         = $this->paths['httpdXampp'];
+        $httpdXamppPHP      = str_replace('{{php_major_version}}', $majorVersion, $this->paths['httpdXamppPHP']);
+        $httpdXamppTemplate = $this->paths['httpdXamppTemplate'];
+
+        if (is_file($httpdXamppPHP)) {
+            $originContent    = @file_get_contents($httpdXamppPHP);
+            $httpdXamppCloned = true;
+        } else {
+            $originContent    = @file_get_contents($httpdXampp);
+            $httpdXamppCloned = false;
+        }
 
         if (! is_file($httpdXamppTemplate)) {
             $templateDir = dirname($httpdXamppTemplate);
@@ -140,7 +158,7 @@ class Installer extends Application
                 @mkdir($templateDir, 0755, true);
             }
 
-            @file_put_contents($httpdXamppTemplate, str_replace('php' . $phpMajorVersion, 'php{{php_major_version}}', $originContent));
+            @file_put_contents($httpdXamppTemplate, str_replace('php' . $majorVersion, 'php{{php_major_version}}', $originContent));
         }
 
         Console::line('Successful', true, max(73 - strlen($message), 1));
@@ -148,6 +166,8 @@ class Installer extends Application
         // Backup and improve httpd-xampp.conf
         $message = 'Backing up and improve the "httpd-xampp.conf" file...';
         Console::line($message, false);
+
+        $backupFile = dirname($httpdXampp) . '\backup\httpd-xampp.conf';
 
         if (! is_file($backupFile)) {
             $backupDir = dirname($backupFile);
@@ -167,14 +187,9 @@ class Installer extends Application
         @file_put_contents($httpdXampp, $newContent);
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
-        // Store detected informations of current PHP
-        @file_put_contents($this->paths['phpDir'] . '\.standardized', $this->paths['xamppDir']);
-        @file_put_contents($this->paths['phpDir'] . '\.version', $phpVersion);
-        @file_put_contents($this->paths['phpDir'] . '\.architecture', get_architecture_phpdir($this->paths['phpDir']));
-
         // Create temporary files to continue config in batch file
         @file_put_contents($this->paths['tmpDir'] . '\.phpdir', $this->paths['phpDir']);
-        @file_put_contents($this->paths['tmpDir'] . '\.phprepo', $this->versionRepository->buildStoragePath($phpVersion));
+        @file_put_contents($this->paths['tmpDir'] . '\.phprepo', $this->versionRepository->buildStoragePath($version));
     }
 
     private function tryGetXamppDir()

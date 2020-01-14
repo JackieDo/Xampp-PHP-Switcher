@@ -1,6 +1,14 @@
 <?php
 
 if (! function_exists('copy_dir')) {
+    /**
+     * Copy entire directory
+     *
+     * @param  string  $source The path to directory of source
+     * @param  string  $dest   The path to destination
+     *
+     * @return boolean         Whether the copying process is successful or not
+     */
     function copy_dir($source, $dest) {
         // Make the destination directory if not exist
         if (! is_dir($dest)) {
@@ -43,6 +51,13 @@ if (! function_exists('copy_dir')) {
 }
 
 if (! function_exists('undir')) {
+    /**
+     * Remove entire directory
+     *
+     * @param  string  $dirPath The path to directory want to remove
+     *
+     * @return boolean          Whether the removal was successful or not
+     */
     function undir($dirPath) {
         if (! $handle = opendir($dirPath)) {
             return false;
@@ -80,12 +95,27 @@ if (! function_exists('undir')) {
 }
 
 if (! function_exists('maybe_phpdir')) {
+    /**
+     * Determine the directory is containing the PHP build
+     *
+     * @param  string  $dirPath The path to directory want to check
+     *
+     * @return boolean
+     */
     function maybe_phpdir($dirPath) {
         return (is_dir($dirPath)) && (is_file($dirPath . DIRECTORY_SEPARATOR . 'php.exe'));
     }
 }
 
 if (! function_exists('get_version_phpdir')) {
+    /**
+     * Get the version number of PHP build which is being
+     * stored in a specific directory
+     *
+     * @param  string $dirPath The path to directory containing PHP build
+     *
+     * @return string
+     */
     function get_version_phpdir($dirPath) {
         if (! maybe_phpdir($dirPath)) {
             return null;
@@ -96,6 +126,14 @@ if (! function_exists('get_version_phpdir')) {
 }
 
 if (! function_exists('get_architecture_phpdir')) {
+    /**
+     * Get the architecture of PHP build which is being
+     * stored in a specific directory
+     *
+     * @param  string $dirPath The path to directory containing PHP build
+     *
+     * @return string
+     */
     function get_architecture_phpdir($dirPath) {
         if (! maybe_phpdir($dirPath)) {
             return null;
@@ -106,6 +144,14 @@ if (! function_exists('get_architecture_phpdir')) {
 }
 
 if (! function_exists('get_compiler_phpdir')) {
+    /**
+     * Get the compiler of PHP build which is being
+     * stored in a specific directory
+     *
+     * @param  string $dirPath The path to directory containing PHP build
+     *
+     * @return string
+     */
     function get_compiler_phpdir($dirPath) {
         if (! maybe_phpdir($dirPath)) {
             return null;
@@ -124,6 +170,14 @@ if (! function_exists('get_compiler_phpdir')) {
 }
 
 if (! function_exists('get_builddate_phpdir')) {
+    /**
+     * Get the build date of the PHP build which is
+     * being stored in a specific directory
+     *
+     * @param  string $dirPath The path to directory containing PHP build
+     *
+     * @return string
+     */
     function get_builddate_phpdir($dirPath) {
         if (! maybe_phpdir($dirPath)) {
             return null;
@@ -142,6 +196,14 @@ if (! function_exists('get_builddate_phpdir')) {
 }
 
 if (! function_exists('get_zendversion_phpdir')) {
+    /**
+     * Get the Zend Engine version of the PHP build
+     * which is being stored in a specific directory
+     *
+     * @param  string $dirPath The path to directory containing PHP build
+     *
+     * @return string
+     */
     function get_zendversion_phpdir($dirPath) {
         if (! maybe_phpdir($dirPath)) {
             return null;
@@ -152,12 +214,26 @@ if (! function_exists('get_zendversion_phpdir')) {
 }
 
 if (! function_exists('is_phpversion')) {
+    /**
+     * Determine the string is PHP version number
+     *
+     * @param  string  $string
+     *
+     * @return boolean
+     */
     function is_phpversion($string) {
         return preg_match('/^\d+\.\d+\.\d+(-extra)?$/', $string);
     }
 }
 
 if (! function_exists('get_major_phpversion')) {
+    /**
+     * Get major part from PHP version number
+     *
+     * @param  string $version The PHP version number
+     *
+     * @return string
+     */
     function get_major_phpversion($version) {
         if (! is_phpversion($version)) {
             return null;
@@ -168,6 +244,13 @@ if (! function_exists('get_major_phpversion')) {
 }
 
 if (! function_exists('get_minor_phpversion')) {
+    /**
+     * Get minor part from PHP version number
+     *
+     * @param  string $version The PHP version number
+     *
+     * @return string
+     */
     function get_minor_phpversion($version) {
         if (! is_phpversion($version)) {
             return null;
@@ -178,6 +261,13 @@ if (! function_exists('get_minor_phpversion')) {
 }
 
 if (! function_exists('get_release_phpversion')) {
+    /**
+     * Get release part from PHP version number
+     *
+     * @param  string $version The PHP version number
+     *
+     * @return string
+     */
     function get_release_phpversion($version) {
         if (! is_phpversion($version)) {
             return null;
@@ -188,6 +278,13 @@ if (! function_exists('get_release_phpversion')) {
 }
 
 if (! function_exists('get_extra_phpversion')) {
+    /**
+     * Get extra part from PHP version number
+     *
+     * @param  string $version The PHP version number
+     *
+     * @return string
+     */
     function get_extra_phpversion($version) {
         if (! is_phpversion($version)) {
             return null;
@@ -204,18 +301,39 @@ if (! function_exists('get_extra_phpversion')) {
 }
 
 if (! function_exists('maybe_path')) {
+    /**
+     * Determine the string can be a path
+     *
+     * @param  string  $string
+     *
+     * @return boolean
+     */
     function maybe_path($string) {
         return (bool) preg_match('/^[^\"\<\>\?\*\|]+$/', $string);
     }
 }
 
 if (! function_exists('winstyle_path')) {
+    /**
+     * Convert paths to Windows style
+     *
+     * @param  string $path
+     *
+     * @return string
+     */
     function winstyle_path($path) {
         return str_replace('/', '\\', $path);
     }
 }
 
 if (! function_exists('unixstyle_path')) {
+    /**
+     * Convert paths to Unix style
+     *
+     * @param  string $path
+     *
+     * @return string
+     */
     function unixstyle_path($path) {
         return str_replace('\\', '/', $path);
     }
@@ -298,5 +416,52 @@ if (! function_exists('relative_path')) {
         }
 
         return str_repeat('..' . $separator, count($diffFromTo)) . implode($separator, $diffToFrom);
+    }
+}
+
+if (! function_exists('create_ini_file')) {
+    /**
+     * Create ini file
+     *
+     * @param  string  $filename         The path to file want to create
+     * @param  array   $data             The content want to save
+     * @param  boolean $process_sessions Use session names in data
+     *
+     * @return boolean
+     */
+    function create_ini_file($filename, $data = [], $process_sessions = false) {
+        $content = '';
+
+        if ((bool) $process_sessions) {
+            foreach ($data as $section => $values) {
+                $content .= PHP_EOL . '[' . $section. ']' . PHP_EOL;
+
+                foreach ($values as $key => $value) {
+                    if (is_array($value)) {
+                        for ($i = 0; $i < count($value); $i++) {
+                            $content .= $key . '[] = "' . $value[$i] . '"' . PHP_EOL;
+                        }
+                    } else if (empty($value)) {
+                        $content .= $key . ' = ' . PHP_EOL;
+                    } else {
+                        $content .= $key . ' = "' . str_replace('"', '\"', $value) . '"' . PHP_EOL;
+                    }
+                }
+            }
+        } else {
+            foreach ($data as $key => $value) {
+                if (is_array($value)) {
+                    for ($i = 0; $i < count($value); $i++) {
+                        $content .= $key . '[] = "' . $value[$i] . '"' . PHP_EOL;
+                    }
+                } else if (empty($value)) {
+                    $content .= $key . ' = ' . PHP_EOL;
+                } else {
+                    $content .= $key . ' = "' . str_replace('"', '\"', $value) . '"' . PHP_EOL;
+                }
+            }
+        }
+
+        return file_put_contents($filename, ltrim($content));
     }
 }

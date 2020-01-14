@@ -11,7 +11,6 @@ class Switcher extends Application
 {
     protected $currentStoragePath;
     protected $currentVersion;
-    protected $currentArchitecture;
     protected $versions = [];
 
     public function __construct()
@@ -28,9 +27,8 @@ class Switcher extends Application
             $this->requireInstall();
         }
 
-        $this->currentVersion      = get_version_phpdir($this->paths['phpDir']);
-        $this->currentArchitecture = get_architecture_phpdir($this->paths['phpDir']);
-        $this->versions            = &$this->versionRepository->versions;
+        $this->currentVersion = get_version_phpdir($this->paths['phpDir']);
+        $this->versions       = &$this->versionRepository->versions;
     }
 
     public function showInfo($version = null)
@@ -47,16 +45,16 @@ class Switcher extends Application
             Console::terminate('Sorry! Do not found any PHP version that you entered.', 1);
         }
 
-        $isOriginalVersion = $this->isOriginalVersion($version);
+        $isBuiltInVersion = $this->isBuiltInVersion($version);
 
         Console::line($message);
         Console::breakline();
-        Console::line('Version      : ' . $version . ' ('. (($isOriginalVersion) ? 'Built-in' : 'Add-on') . ' version)');
+        Console::line('Version      : ' . $version . ' ('. (($isBuiltInVersion) ? 'Built-in' : 'Add-on') . ' version)');
         Console::line('Storage path : ' . $this->versions[$version]['storagePath']);
-        Console::line('Compiler     : ' . get_compiler_phpdir($this->versions[$version]['storagePath']));
+        Console::line('Compiler     : ' . $this->versions[$version]['compiler']);
         Console::line('Architecture : ' . $this->versions[$version]['architecture'] . ' bit');
-        Console::line('Build date   : ' . get_builddate_phpdir($this->versions[$version]['storagePath']));
-        Console::line('Zend version : ' . get_zendversion_phpdir($this->versions[$version]['storagePath']));
+        Console::line('Build date   : ' . $this->versions[$version]['buildDate']);
+        Console::line('Zend version : ' . $this->versions[$version]['zendVersion']);
 
         Console::breakline();
         Console::hrline();
@@ -86,7 +84,7 @@ class Switcher extends Application
         $count = 0;
 
         foreach ($this->versions as $version => $info) {
-            $isOriginalVersion = $this->isOriginalVersion($version);
+            $isBuiltInVersion = $this->isBuiltInVersion($version);
 
             $col_1_content = str_pad(++$count, strlen($totalVersions), ' ', STR_PAD_LEFT) . '.  ';
             $col_2_content = 'Version ' . str_pad($version, $maxLenVersion + 2);
@@ -96,7 +94,7 @@ class Switcher extends Application
             Console::line($col_2_content, false);
             Console::line($col_3_content, false);
 
-            if ($isOriginalVersion) {
+            if ($isBuiltInVersion) {
                 Console::line('-  Built-in', false);
             } else {
                 Console::line('-  Add-on', false);
@@ -130,7 +128,7 @@ class Switcher extends Application
         }
 
         $architecture = get_architecture_phpdir($source);
-        if ($architecture != $this->currentArchitecture) {
+        if ($architecture != $this->versionRepository->architecture) {
             Console::line('The directory that you provided is not compatible with your Xampp.');
             Console::line('Cancel the adding process.');
             Console::breakline();
@@ -172,7 +170,13 @@ class Switcher extends Application
         $message = 'Copying directory of new PHP build into the repository...';
         Console::line($message, false);
 
-        $importResult = $this->versionRepository->import($source, ['architecture' => $architecture, 'buildVersion' => $version], false);
+        $importResult = $this->versionRepository->import($source, [
+            'version'      => $version,
+            'architecture' => $architecture,
+            'compiler'     => $compiler,
+            'buildDate'    => $buildDate,
+            'zendVersion'  => $zendVersion
+        ], false);
 
         if ($importResult['error_code'] != 0) {
             Console::line('Failed', true, max(77 - strlen($message), 1));
@@ -180,35 +184,39 @@ class Switcher extends Application
             Console::terminate(null, 1);
         }
 
-        $storagePath = $importResult['data']['storagePath'];
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
         // Standardize paths
         $message = 'Standardize paths in new PHP build to be compatible with Xampp...';
         Console::line($message, false);
 
-        $standardizedPath   = is_file($storagePath . '\.standardized') ? @file_get_contents($storagePath . '\.standardized') : null;
+        $storagePath  = $importResult['data']['storagePath'];
+        $repoSettings = $importResult['data']['repoSettings'];
+
+        if ($repoSettings['RepoImporting']['PathStandardized']) {
+            $standardizePattern     = '/' . preg_quote($repoSettings['RepoImporting']['PathStandardized'], '/') . '/i';
+            $standardizeReplacement = $this->paths['xamppDir'];
+        } else {
+            $standardizePattern     = '/([\!\=\'\"\n]{1}[\s]?)(\w\:)?\\\\xampp/i';
+            $standardizeReplacement = '${1}' . $this->paths['xamppDir'];
+        }
+
         $standardizeActions = [
             [
                 'type'        => 'replace',
-                'pattern'     => empty($standardizedPath) ? '/([\!\=\'\"\n]{1}[\s]?)(\w\:)?\\\\xampp/i' : '/' . preg_quote($standardizedPath, '/') . '/i',
-                'replacement' => empty($standardizedPath) ? '${1}' . $this->paths['xamppDir'] : $this->paths['xamppDir'],
+                'pattern'     => $standardizePattern,
+                'replacement' => $standardizeReplacement,
                 'files'       => require($this->paths['needBeStandardized'])
             ],
-            // For specific build that has file "Text/Highlighter/generate.bat"
             [
                 'type'        => 'replace',
                 'pattern'     => '/' . preg_quote($this->paths['xamppDir'] . '\php/Text/Highlighter/generate.bat', '/') . '/i',
                 'replacement' => '"' . $this->paths['xamppDir'] . '\php\Text\Highlighter\generate.bat"',
-                'files'       => [
-                    'Text\Highlighter\generate.bat'
-                ]
+                'files'       => ['Text\Highlighter\generate.bat']
             ]
         ];
 
-        $standardizeResult = $this->versionRepository->edit($version, $standardizeActions, false);
-
-        if (! $standardizeResult) {
+        if (! $this->versionRepository->edit($version, $standardizeActions, false)) {
             Console::line('Failed', true, max(77 - strlen($message), 1));
             Console::breakline();
             Console::line('Removing recently added PHP build...');
@@ -216,7 +224,8 @@ class Switcher extends Application
             Console::terminate(null, 1);
         }
 
-        @file_put_contents($storagePath . '\.standardized', $this->paths['xamppDir']);
+        $repoSettings['RepoImporting']['PathStandardized'] = $this->paths['xamppDir'];
+        @create_ini_file($storagePath . '\.repo', $repoSettings, true);
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
         // Create httpd-xamm-php{{php_major_version}}.conf
@@ -265,7 +274,7 @@ class Switcher extends Application
             Console::terminate('You are running on this PHP version, so you cannot remove it.', 1);
         }
 
-        if ($this->isOriginalVersion($version)) {
+        if ($this->isBuiltInVersion($version)) {
             Console::terminate('This is the original version of Xampp, does not allow removal.', 1);
         }
 
@@ -420,7 +429,7 @@ class Switcher extends Application
         if (! $includeCurrent) {
             Console::line('You are running PHP ' . $this->currentVersion, false);
 
-            if ($this->isOriginalVersion($this->currentVersion)) {
+            if ($this->isBuiltInVersion($this->currentVersion)) {
                 Console::line(' (Built-in version)', false);
             } else {
                 Console::line(' (Add-on version)', false);
@@ -459,7 +468,7 @@ class Switcher extends Application
             Console::line($col_2_content, false);
             Console::line($col_3_content, false);
 
-            if ($this->isOriginalVersion($version)) {
+            if ($this->isBuiltInVersion($version)) {
                 Console::line('-  Built-in', false);
             } else {
                 Console::line('-  Add-on', false);
@@ -526,8 +535,8 @@ class Switcher extends Application
         return $this->currentVersion === $version;
     }
 
-    private function isOriginalVersion($version)
+    private function isBuiltInVersion($version)
     {
-        return (! $this->versionRepository->isImported($version));
+        return (! $this->versions[$version]['isAddOnBuild']);
     }
 }
