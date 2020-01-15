@@ -166,7 +166,6 @@ class Application
         $this->paths['httpdXamppTemplate'] = $appDir . '\templates\xampp_config\httpd-xampp.conf.tpl';
         $this->paths['pathRegister']       = $appDir . '\support\PathRegister.vbs';
         $this->paths['powerExecutor']      = $appDir . '\support\PowerExec.vbs';
-        $this->paths['needBeStandardized'] = $appDir . '\support\NeedBeStandardized.php';
 
         if (! is_dir($this->paths['tmpDir'])) {
             @mkdir($this->paths['tmpDir'], 0755, true);

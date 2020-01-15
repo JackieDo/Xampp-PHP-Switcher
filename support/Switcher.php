@@ -206,7 +206,7 @@ class Switcher extends Application
                 'type'        => 'replace',
                 'pattern'     => $standardizePattern,
                 'replacement' => $standardizeReplacement,
-                'files'       => require($this->paths['needBeStandardized'])
+                'files'       => $this->prepareStandardizeList()
             ],
             [
                 'type'        => 'replace',
@@ -538,5 +538,19 @@ class Switcher extends Application
     private function isBuiltInVersion($version)
     {
         return (! $this->versions[$version]['isAddOnBuild']);
+    }
+
+    private function prepareStandardizeList()
+    {
+        $list = [];
+
+        if (is_file($this->paths['appDir'] . '\need_standardize.lst')) {
+            $autodetect = ini_get('auto_detect_line_endings');
+            ini_set('auto_detect_line_endings', '1');
+            $list = file($this->paths['appDir'] . '\need_standardize.lst', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            ini_set('auto_detect_line_endings', $autodetect);
+        }
+
+        return $list;
     }
 }
