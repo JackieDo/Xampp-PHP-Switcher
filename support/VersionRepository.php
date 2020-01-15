@@ -1,7 +1,5 @@
 <?php
 
-require_once __DIR__ . '/helpers.php';
-
 if (! defined('DS')) {
     define('DS', DIRECTORY_SEPARATOR);
 }
@@ -123,7 +121,7 @@ class VersionRepository
         return true;
     }
 
-    public function import($source, $predefined = [], $validityCheck = true)
+    public function importBuild($source, $predefined = [], $validityCheck = true)
     {
         if ($validityCheck) {
             if (! maybe_phpdir($source)) {
@@ -191,23 +189,16 @@ class VersionRepository
             ];
         }
 
-        $repoSettings = [
-            'BuildInfo'     => [],
-            'RepoImporting' => []
-        ];
+        $storageConfig = $this->getStorageConfig($storagePath);
 
-        if (is_file($storagePath . '\.repo')) {
-            $repoSettings = @parse_ini_file($storagePath . '\.repo', true);
-        }
+        $storageConfig['BuildInfo']['Version']        = $version;
+        $storageConfig['BuildInfo']['Architecture']   = $architecture;
+        $storageConfig['BuildInfo']['Compiler']       = $compiler;
+        $storageConfig['BuildInfo']['BuildDate']      = $buildDate;
+        $storageConfig['BuildInfo']['ZendVersion']    = $zendVersion;
+        $storageConfig['RepoImporting']['AddOnBuild'] = true;
 
-        $repoSettings['BuildInfo']['Version']        = $version;
-        $repoSettings['BuildInfo']['Architecture']   = $architecture;
-        $repoSettings['BuildInfo']['Compiler']       = $compiler;
-        $repoSettings['BuildInfo']['BuildDate']      = $buildDate;
-        $repoSettings['BuildInfo']['ZendVersion']    = $zendVersion;
-        $repoSettings['RepoImporting']['AddOnBuild'] = '1';
-
-        @create_ini_file($storagePath . '\.repo', $repoSettings, true);
+        $this->saveStorageConfig($storagePath, $storageConfig);
 
         $this->versions[$version] = [
             'storagePath'  => $storagePath,
@@ -221,13 +212,13 @@ class VersionRepository
         return [
             'error' => 0,
             'data'  => [
-                'storagePath'  => $storagePath,
-                'repoSettings' => $repoSettings
+                'storagePath'   => $storagePath,
+                'storageConfig' => $storageConfig
             ]
         ];
     }
 
-    public function remove($version, $validityCheck = true)
+    public function removeBuild($version, $validityCheck = true)
     {
         if ($validityCheck) {
             if (! $this->has($version)) {
@@ -263,7 +254,7 @@ class VersionRepository
         return true;
     }
 
-    public function edit($version, $actions = [], $validityCheck = true)
+    public function editBuild($version, $actions = [], $validityCheck = true)
     {
         if ($validityCheck) {
             if (! $this->has($version)) {
@@ -343,6 +334,27 @@ class VersionRepository
         return $this->versions[$version]['isAddOnBuild'];
     }
 
+    public function getStorageConfig($storagePath)
+    {
+        if (is_file($storagePath . '\.storage')) {
+            $data = @file_get_contents($storagePath . '\.storage');
+
+            if ($data) {
+                return json_decode($data, true);
+            }
+        }
+
+        return [
+            'BuildInfo'     => [],
+            'RepoImporting' => []
+        ];
+    }
+
+    public function saveStorageConfig($storagePath, $contents = [])
+    {
+        return @file_put_contents($storagePath . '\.storage', json_encode($contents, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    }
+
     private function loadVersions()
     {
         $location = $this->location;
@@ -364,59 +376,51 @@ class VersionRepository
                 continue;
             }
 
-            $storagePath    = $location . DS . $item;
-            $needUpdateInfo = true;
-            $repoSettings       = [
-                'BuildInfo' => []
-            ];
+            $storagePath   = $location . DS . $item;
+            $storageConfig = $this->getStorageConfig($storagePath);
+            $hasBuildInfo  = array_key_exists('BuildInfo', $storageConfig);
+            $needUpdate    = false;
 
-            if (is_file($storagePath . '\.repo')) {
-                $repoSettings   = @parse_ini_file($storagePath . '\.repo', true);
-                $needUpdate = false;
-            }
-
-            $hasBuildInfo = array_key_exists('BuildInfo', $repoSettings);
-
-            if (!$hasBuildInfo || !array_key_exists('Version', $repoSettings['BuildInfo'])) {
-                $repoSettings['BuildInfo']['Version'] = get_version_phpdir($storagePath);
+            if (!$hasBuildInfo || !array_key_exists('Version', $storageConfig['BuildInfo'])) {
+                $storageConfig['BuildInfo']['Version'] = get_version_phpdir($storagePath);
                 $needUpdateInfo = true;
             }
 
-            if (!$hasBuildInfo || !array_key_exists('Architecture', $repoSettings['BuildInfo'])) {
-                $repoSettings['BuildInfo']['Architecture'] = get_architecture_phpdir($storagePath);
+            if (!$hasBuildInfo || !array_key_exists('Architecture', $storageConfig['BuildInfo'])) {
+                $storageConfig['BuildInfo']['Architecture'] = get_architecture_phpdir($storagePath);
                 $needUpdateInfo = true;
             }
 
-            if ($repoSettings['BuildInfo']['Architecture'] != $this->architecture) {
+            if ($storageConfig['BuildInfo']['Architecture'] != $this->architecture) {
                 continue;
             }
 
-            if (!$hasBuildInfo || !array_key_exists('Compiler', $repoSettings['BuildInfo'])) {
-                $repoSettings['BuildInfo']['Compiler'] = get_compiler_phpdir($storagePath);
+            if (!$hasBuildInfo || !array_key_exists('Compiler', $storageConfig['BuildInfo'])) {
+                $storageConfig['BuildInfo']['Compiler'] = get_compiler_phpdir($storagePath);
                 $needUpdateInfo = true;
             }
 
-            if (!$hasBuildInfo || !array_key_exists('BuildDate', $repoSettings['BuildInfo'])) {
-                $repoSettings['BuildInfo']['BuildDate'] = get_builddate_phpdir($storagePath);
+            if (!$hasBuildInfo || !array_key_exists('BuildDate', $storageConfig['BuildInfo'])) {
+                $storageConfig['BuildInfo']['BuildDate'] = get_builddate_phpdir($storagePath);
                 $needUpdateInfo = true;
             }
 
-            if (!$hasBuildInfo || !array_key_exists('ZendVersion', $repoSettings['BuildInfo'])) {
-                $repoSettings['BuildInfo']['ZendVersion'] = get_zendversion_phpdir($storagePath);
+            if (!$hasBuildInfo || !array_key_exists('ZendVersion', $storageConfig['BuildInfo'])) {
+                $storageConfig['BuildInfo']['ZendVersion'] = get_zendversion_phpdir($storagePath);
                 $needUpdateInfo = true;
             }
 
             if ($needUpdateInfo) {
-                @create_ini_file($storagePath . '\.repo', $repoSettings, true);
+                $this->saveStorageConfig($storagePath, $storageConfig);
             }
 
-            $avaiableVersions[$repoSettings['BuildInfo']['Version']] = [
+            $avaiableVersions[$storageConfig['BuildInfo']['Version']] = [
                 'storagePath'  => $storagePath,
-                'architecture' => $repoSettings['BuildInfo']['Architecture'],
-                'compiler'     => $repoSettings['BuildInfo']['Compiler'],
-                'buildDate'    => $repoSettings['BuildInfo']['BuildDate'],
-                'zendVersion'  => $repoSettings['BuildInfo']['ZendVersion'],
-                'isAddOnBuild' => (bool) $repoSettings['RepoImporting']['AddOnBuild']
+                'architecture' => $storageConfig['BuildInfo']['Architecture'],
+                'compiler'     => $storageConfig['BuildInfo']['Compiler'],
+                'buildDate'    => $storageConfig['BuildInfo']['BuildDate'],
+                'zendVersion'  => $storageConfig['BuildInfo']['ZendVersion'],
+                'isAddOnBuild' => (bool) $storageConfig['RepoImporting']['AddOnBuild']
             ];
         }
 

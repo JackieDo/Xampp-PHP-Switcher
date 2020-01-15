@@ -1,8 +1,5 @@
 <?php
 
-require_once __DIR__.'/Application.php';
-require_once __DIR__.'/helpers.php';
-
 if (! defined('DS')) {
     define('DS', DIRECTORY_SEPARATOR);
 }
@@ -17,7 +14,7 @@ class Installer extends Application
             Console::breakline();
             Console::line('Xampp PHP Switcher is already integrated into Xampp.');
             Console::line('No need to do it again.');
-            exit;
+            Console::terminate(null, 0, true);
         }
     }
 
@@ -117,9 +114,9 @@ class Installer extends Application
         $message = 'Detecting informations of current PHP build...';
         Console::line($message, false);
 
-        $version      = get_version_phpdir($this->paths['phpDir']);
-        $majorVersion = get_major_phpversion($version);
-        $repoSettings = [
+        $version       = get_version_phpdir($this->paths['phpDir']);
+        $majorVersion  = get_major_phpversion($version);
+        $storageConfig = [
             'BuildInfo' => [
                 'Version'      => $version,
                 'Architecture' => get_architecture_phpdir($this->paths['phpDir']),
@@ -132,7 +129,7 @@ class Installer extends Application
             ]
         ];
 
-        @create_ini_file($this->paths['phpDir'] . '\.repo', $repoSettings, true);
+        $this->repository->saveStorageConfig($this->paths['phpDir'], $storageConfig);
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
         // Create sample file
@@ -189,7 +186,7 @@ class Installer extends Application
 
         // Create temporary files to continue config in batch file
         @file_put_contents($this->paths['tmpDir'] . '\.phpdir', $this->paths['phpDir']);
-        @file_put_contents($this->paths['tmpDir'] . '\.phprepo', $this->versionRepository->buildStoragePath($version));
+        @file_put_contents($this->paths['tmpDir'] . '\.storage_path', $this->repository->buildStoragePath($version));
     }
 
     private function tryGetXamppDir()

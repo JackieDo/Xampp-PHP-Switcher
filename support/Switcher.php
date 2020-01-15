@@ -1,8 +1,5 @@
 <?php
 
-require_once __DIR__.'/Application.php';
-require_once __DIR__.'/helpers.php';
-
 if (! defined('DS')) {
     define('DS', DIRECTORY_SEPARATOR);
 }
@@ -28,10 +25,10 @@ class Switcher extends Application
         }
 
         $this->currentVersion = get_version_phpdir($this->paths['phpDir']);
-        $this->versions       = &$this->versionRepository->versions;
+        $this->versions       = &$this->repository->versions;
     }
 
-    public function showInfo($version = null)
+    public function showVersion($version = null)
     {
         if ($version == 'current' || (empty($version) && count($this->versions) == 1)) {
             $version = $this->currentVersion;
@@ -128,7 +125,7 @@ class Switcher extends Application
         }
 
         $architecture = get_architecture_phpdir($source);
-        if ($architecture != $this->versionRepository->architecture) {
+        if ($architecture != $this->repository->architecture) {
             Console::line('The directory that you provided is not compatible with your Xampp.');
             Console::line('Cancel the adding process.');
             Console::breakline();
@@ -170,7 +167,7 @@ class Switcher extends Application
         $message = 'Copying directory of new PHP build into the repository...';
         Console::line($message, false);
 
-        $importResult = $this->versionRepository->import($source, [
+        $importResult = $this->repository->importBuild($source, [
             'version'      => $version,
             'architecture' => $architecture,
             'compiler'     => $compiler,
@@ -190,11 +187,11 @@ class Switcher extends Application
         $message = 'Standardize paths in new PHP build to be compatible with Xampp...';
         Console::line($message, false);
 
-        $storagePath  = $importResult['data']['storagePath'];
-        $repoSettings = $importResult['data']['repoSettings'];
+        $storagePath   = $importResult['data']['storagePath'];
+        $storageConfig = $importResult['data']['storageConfig'];
 
-        if ($repoSettings['RepoImporting']['PathStandardized']) {
-            $standardizePattern     = '/' . preg_quote($repoSettings['RepoImporting']['PathStandardized'], '/') . '/i';
+        if ($storageConfig['RepoImporting']['PathStandardized']) {
+            $standardizePattern     = '/' . preg_quote($storageConfig['RepoImporting']['PathStandardized'], '/') . '/i';
             $standardizeReplacement = $this->paths['xamppDir'];
         } else {
             $standardizePattern     = '/([\!\=\'\"\n]{1}[\s]?)(\w\:)?\\\\xampp/i';
@@ -216,16 +213,16 @@ class Switcher extends Application
             ]
         ];
 
-        if (! $this->versionRepository->edit($version, $standardizeActions, false)) {
+        if (! $this->repository->editBuild($version, $standardizeActions, false)) {
             Console::line('Failed', true, max(77 - strlen($message), 1));
             Console::breakline();
             Console::line('Removing recently added PHP build...');
-            $this->versionRepository->remove($version, false);
+            $this->repository->removeBuild($version, false);
             Console::terminate(null, 1);
         }
 
-        $repoSettings['RepoImporting']['PathStandardized'] = $this->paths['xamppDir'];
-        @create_ini_file($storagePath . '\.repo', $repoSettings, true);
+        $storageConfig['RepoImporting']['PathStandardized'] = $this->paths['xamppDir'];
+        $this->repository->saveStorageConfig($storagePath, $storageConfig);
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
         // Create httpd-xamm-php{{php_major_version}}.conf
@@ -308,7 +305,7 @@ class Switcher extends Application
         $message = 'Deleting the directory of the build...';
         Console::line($message, false);
 
-        $removeDir = $this->versionRepository->remove($version, false);
+        $removeDir = $this->repository->removeBuild($version, false);
 
         if (! $removeDir) {
             Console::line('Failed', true, max(77 - strlen($message), 1));
@@ -367,7 +364,7 @@ class Switcher extends Application
         $message = 'Creating symbolic link to corresponding PHP build in repository...';
         Console::line($message, false);
 
-        $resultMap = $this->versionRepository->mapToUse($version, $this->paths['phpDir']);
+        $resultMap = $this->repository->mapToUse($version, $this->paths['phpDir']);
 
         if (! $resultMap) {
             Console::line('Failed', true, max(77 - strlen($message), 1));
@@ -502,7 +499,7 @@ class Switcher extends Application
 
             if (is_null($selection)) {
                 Console::line('Xampp PHP Switcher is terminating on demand...');
-                exit;
+                Console::terminate(null, 0, true);
             }
 
             $selection = ((int) $selection);

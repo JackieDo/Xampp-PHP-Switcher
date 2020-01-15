@@ -14,6 +14,14 @@
     "require": {
         "php": ">=5.4"
     },
+    "autoload": {
+        "files": [
+            "support/helpers.php"
+        ],
+        "classmap": [
+            "support"
+        ]
+    },
     "scripts": {
         "post-create-project-cmd": [
             "xphp.bat install"

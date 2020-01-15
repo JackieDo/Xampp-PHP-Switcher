@@ -84,7 +84,7 @@ if errorLevel 1 goto installationFailed
 
 echo|set/p =Moving directory of the current PHP build into the repository...
 for /F "tokens=* USEBACKQ" %%v in ("%XPHP_TMP_DIR%\.phpdir") do (set XPHP_PHP_DIR=%%v)
-for /F "tokens=* USEBACKQ" %%v in ("%XPHP_TMP_DIR%\.phprepo") do (set XPHP_PHP_REPO=%%v)
+for /F "tokens=* USEBACKQ" %%v in ("%XPHP_TMP_DIR%\.storage_path") do (set XPHP_PHP_REPO=%%v)
 move /Y "%XPHP_PHP_DIR%" "%XPHP_PHP_REPO%" >nul 2>&1
 echo          Successful
 
@@ -125,8 +125,8 @@ call :clearEnvVars
 exit /B %errorLevel%
 
 rem ---------------------------------------------
-:showInfo
-php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "showInfo" "%~2"
+:showVersion
+php -n -d output_buffering=0 %XPHP_PHP_CONTROLLER% "showVersion" "%~2"
 call :clearEnvVars
 exit /B %errorLevel%
 
@@ -145,7 +145,7 @@ if "%~1"=="install" goto install
 if "%~1"=="add" goto addVersion
 if "%~1"=="remove" goto removeVersion
 if "%~1"=="list" goto listVersions
-if "%~1"=="info" goto showInfo
+if "%~1"=="info" goto showVersion
 if "%~1"=="switch" goto switchVersion
 
 rem Call command with unknown param -------------

@@ -1,19 +1,14 @@
 <?php
 
-require_once __DIR__.'/Console.php';
-require_once __DIR__.'/Setting.php';
-require_once __DIR__.'/VersionRepository.php';
-require_once __DIR__.'/helpers.php';
-
 if (! defined('DS')) {
     define('DS', DIRECTORY_SEPARATOR);
 }
 
 class Application
 {
-    protected $versionRepository = null;
-    protected $setting           = null;
-    protected $paths             = [];
+    protected $repository = null;
+    protected $setting    = null;
+    protected $paths      = [];
 
     public function __construct($initAdditional = true)
     {
@@ -117,7 +112,7 @@ class Application
         $this->paths['httpdXampp']    = $this->paths['apacheDir'] . '\conf\extra\httpd-xampp.conf';
         $this->paths['httpdXamppPHP'] = $this->paths['apacheDir'] . '\conf\extra\httpd-xampp-php{{php_major_version}}.conf';
 
-        $this->versionRepository = new VersionRepository(get_architecture_phpdir($this->paths['phpDir']), $this->paths['xamppDir'] . '\phpRepository', false);
+        $this->repository = new VersionRepository(get_architecture_phpdir($this->paths['phpDir']), $this->paths['xamppDir'] . '\phpRepository', false);
 
         return $this;
     }

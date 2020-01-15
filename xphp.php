@@ -1,16 +1,13 @@
 <?php
 
-require_once __DIR__.'/support/Switcher.php';
-require_once __DIR__.'/support/Installer.php';
-
+require __DIR__.'/vendor/autoload.php';
 set_time_limit(0);
 
 if (! getenv('XPHP_APP_DIR')) {
-    echo PHP_EOL;
-    echo 'This script does not accept running as a standalone application.' . PHP_EOL;
-    echo 'Please run application from command "xphp"';
-    echo PHP_EOL;
-    exit(1);
+    Console::breakline();
+    Console::line('This script does not accept running as a standalone application.');
+    Console::line('Please run application from command "xphp"');
+    Console::terminate(null, 1, true);
 }
 
 $banner = PHP_EOL
@@ -20,15 +17,15 @@ $banner = PHP_EOL
     . "#  Author: Jackie Do <anhvudo@gmail.com>                                          #" . PHP_EOL
     . "#---------------------------------------------------------------------------------#" . PHP_EOL
     . "#  License: MIT (c) Jackie Do <anhvudo@gmail.com>                                 #" . PHP_EOL
-    . "###################################################################################" . PHP_EOL . PHP_EOL;
+    . "###################################################################################" . PHP_EOL;
 
 if (isset($_SERVER['argv'][1])) {
-    echo $banner;
+    Console::line($banner);
 
     if ($_SERVER['argv'][1] == 'install') {
         $installer = new Installer;
         $installer->install();
-        exit;
+        Console::terminate(null, 0, true);
     }
 
     $witcher = new Switcher;
@@ -46,8 +43,8 @@ if (isset($_SERVER['argv'][1])) {
             $witcher->removeVersion($_SERVER['argv'][2]);
             break;
 
-        case 'showInfo':
-            $witcher->showInfo($_SERVER['argv'][2]);
+        case 'showVersion':
+            $witcher->showVersion($_SERVER['argv'][2]);
             break;
 
         case 'switchVersion':
@@ -58,7 +55,7 @@ if (isset($_SERVER['argv'][1])) {
             break;
     }
 
-    exit;
+    Console::terminate(null, 0, true);
 }
 
-exit;
+Console::terminate(null, 0, true);

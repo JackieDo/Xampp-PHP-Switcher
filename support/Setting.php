@@ -1,7 +1,5 @@
 <?php
 
-require_once __DIR__.'/helpers.php';
-
 if (! defined('DS')) {
     define('DS', DIRECTORY_SEPARATOR);
 }
