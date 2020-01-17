@@ -23,8 +23,8 @@
         ]
     },
     "scripts": {
-        "post-update-cmd": [
-            "if not exist settings.ini xphp.bat install"
+        "post-create-project-cmd": [
+            "xphp.bat install"
         ]
     },
     "config": {

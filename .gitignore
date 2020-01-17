@@ -1,5 +1,7 @@
 /templates/xampp_config/*
-/vendor
+/vendor/*
+!/vendor/composer
+!/vendor/autoload.php
 /test
 /tmp
 .DS_Store
