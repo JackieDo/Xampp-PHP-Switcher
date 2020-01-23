@@ -42,6 +42,7 @@ class Switcher extends Application
             Console::terminate('Sorry! Do not found any PHP version that you entered.', 1);
         }
 
+        $architecture     = $this->versions[$version]['architecture'];
         $isBuiltInVersion = $this->isBuiltInVersion($version);
 
         Console::line($message);
@@ -49,7 +50,7 @@ class Switcher extends Application
         Console::line('Version      : ' . $version . ' ('. (($isBuiltInVersion) ? 'Built-in' : 'Add-on') . ' version)');
         Console::line('Storage path : ' . $this->versions[$version]['storagePath']);
         Console::line('Compiler     : ' . $this->versions[$version]['compiler']);
-        Console::line('Architecture : ' . $this->versions[$version]['architecture'] . ' bit');
+        Console::line('Architecture : ' . $architecture . ' bit (' . (($architecture == '32') ? 'x86' : 'x64') . ')');
         Console::line('Build date   : ' . $this->versions[$version]['buildDate']);
         Console::line('Zend version : ' . $this->versions[$version]['zendVersion']);
 
