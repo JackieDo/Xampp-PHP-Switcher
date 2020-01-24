@@ -106,6 +106,7 @@ class Switcher extends Application
         }
 
         Console::breakline();
+        Console::hrline();
         Console::terminate('Your request is completed.');
     }
 
