@@ -139,7 +139,29 @@ if (! function_exists('get_architecture_phpdir')) {
             return null;
         }
 
-        return exec('"' . $dirPath . DIRECTORY_SEPARATOR . 'php.exe" -n -r "echo (PHP_INT_SIZE * 8);"');
+        $architecture = 'Unknown';
+
+        exec('"' . $dirPath . DIRECTORY_SEPARATOR . 'php.exe" -n -i | findstr /C:"Architecture"', $output);
+
+        if (strpos($output[0], ' => ')) {
+            $grepInfo = explode(' => ', $output[0])[1];
+        }
+
+        switch ($grepInfo) {
+            case 'x86':
+                $architecture = 32;
+                break;
+
+            case 'x64':
+                $architecture = 64;
+                break;
+
+            default:
+                $architecture = exec('"' . $dirPath . DIRECTORY_SEPARATOR . 'php.exe" -n -r "echo (PHP_INT_SIZE * 8);"');
+                break;
+        }
+
+        return $architecture;
     }
 }
 
