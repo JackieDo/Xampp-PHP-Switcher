@@ -1,8 +1,6 @@
 <?php
 
-if (! defined('DS')) {
-    define('DS', DIRECTORY_SEPARATOR);
-}
+namespace PHPSwitcher\Support;
 
 class Installer extends Application
 {
@@ -14,7 +12,7 @@ class Installer extends Application
             Console::breakline();
             Console::line('Xampp PHP Switcher is already integrated into Xampp.');
             Console::line('No need to do it again.');
-            Console::terminate(null, 0, true);
+            Console::terminate(null, 2, true);
         }
     }
 
@@ -25,15 +23,17 @@ class Installer extends Application
         Console::breakline();
 
         Console::line('1. Register path into Windows Path Environment Variable, so you can call this app anywhere later.');
-        Console::line('2. Create a sample file "httpd-xampp.conf.tpl" to serve for adding new PHP build later.');
-        Console::line('3. Improve current "httpd-xampp.conf" file to easily configure Xampp every time you switches PHP version.');
+        Console::line('2. Backup the current "httpd-xampp.conf" file of your Xampp application.');
+        Console::line('3. Improved the current "httpd-xampp.conf" file for switching between PHP versions.');
         Console::line('4. Move directory of the current PHP build into the repository and create symbolic link to it.');
         Console::breakline();
 
         $continue = Console::confirm('Do you agree to continue?');
 
         if (! $continue) {
-            Console::terminate(null, 1);
+            Console::breakline();
+            Console::line('The installation was canceled by user.');
+            Console::terminate(null, 2, true);
         }
 
         Console::breakline();
@@ -56,14 +56,19 @@ class Installer extends Application
 
         if (is_file($phpDir . '\..\xampp-control.exe')) {
             $detectedXamppDir = realpath($phpDir . '\..\\');
+
             Console::line('Xampp PHP Switcher has detected that directory "' . $detectedXamppDir . '" could be your Xampp directory.');
             Console::breakline();
+
             $confirmXamppDir = Console::confirm('Is that the actual path to your Xampp directory?');
+
             Console::breakline();
         }
 
         $xamppDir = (isset($detectedXamppDir) && $confirmXamppDir) ? $detectedXamppDir : $this->tryGetXamppDir();
+
         $this->setting->set('DirectoryPaths', 'Xampp', $xamppDir);
+
         $this->paths['xamppDir'] = $xamppDir;
 
         if (is_file($xamppDir . '\apache\bin\httpd.exe')) {
@@ -71,8 +76,11 @@ class Installer extends Application
         } else {
             Console::line('Next, because Xampp PHP Switcher does not detect the path to the Apache directory, you need to provide it manually.');
             Console::breakline();
+
             $apacheDir = $this->tryGetApacheDir();
+
             $this->setting->set('DirectoryPaths', 'Apache', $apacheDir);
+
             $this->paths['apacheDir'] = $apacheDir;
         }
 
@@ -81,8 +89,11 @@ class Installer extends Application
         } else {
             Console::line('Next, because Xampp PHP Switcher does not detect the path to the PHP directory, you need to provide it manually.');
             Console::breakline();
+
             $phpDir = $this->tryGetPHPDir();
+
             $this->setting->set('DirectoryPaths', 'PHP', $phpDir);
+
             $this->paths['phpDir'] = $phpDir;
         }
 
@@ -112,6 +123,7 @@ class Installer extends Application
     {
         // Detecting informations of current PHP
         $message = 'Detecting informations of current PHP build...';
+
         Console::line($message, false);
 
         $version       = get_version_phpdir($this->paths['phpDir']);
@@ -132,13 +144,9 @@ class Installer extends Application
         $this->repository->saveStorageConfig($this->paths['phpDir'], $storageConfig);
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
-        // Create sample file
-        $message = 'Creating sample file "httpd-xampp.conf.tpl"...';
-        Console::line($message, false);
-
-        $httpdXampp         = $this->paths['httpdXampp'];
-        $httpdXamppPHP      = str_replace('{{php_major_version}}', $majorVersion, $this->paths['httpdXamppPHP']);
-        $httpdXamppTemplate = $this->paths['httpdXamppTemplate'];
+        $httpdXampp    = $this->paths['httpdXampp'];
+        $httpdXamppPHP = str_replace('{{php_major_version}}', $majorVersion, $this->paths['httpdXamppPHP']);
+        $backupFile    = dirname($httpdXampp) . '\backup\httpd-xampp.conf';
 
         if (is_file($httpdXamppPHP)) {
             $originContent    = @file_get_contents($httpdXamppPHP);
@@ -148,23 +156,10 @@ class Installer extends Application
             $httpdXamppCloned = false;
         }
 
-        if (! is_file($httpdXamppTemplate)) {
-            $templateDir = dirname($httpdXamppTemplate);
+        // Backup the existing "httpd-xampp.conf" file
+        $message = 'Backing up the current "httpd-xampp.conf" file...';
 
-            if (! is_dir($templateDir)) {
-                @mkdir($templateDir, 0755, true);
-            }
-
-            @file_put_contents($httpdXamppTemplate, str_replace('php' . $majorVersion, 'php{{php_major_version}}', $originContent));
-        }
-
-        Console::line('Successful', true, max(73 - strlen($message), 1));
-
-        // Backup and improve httpd-xampp.conf
-        $message = 'Backing up and improve the "httpd-xampp.conf" file...';
         Console::line($message, false);
-
-        $backupFile = dirname($httpdXampp) . '\backup\httpd-xampp.conf';
 
         if (! is_file($backupFile)) {
             $backupDir = dirname($backupFile);
@@ -176,11 +171,19 @@ class Installer extends Application
             @file_put_contents($backupFile, $originContent);
         }
 
+        Console::line('Successful', true, max(73 - strlen($message), 1));
+
+        // Improving the existing "httpd-xampp.conf" file
+        $message = 'Improving the current "httpd-xampp.conf" file...';
+
+        Console::line($message, false);
+
         if (! $httpdXamppCloned) {
             @file_put_contents($httpdXamppPHP, $originContent);
         }
 
         $newContent = 'Include "' . relative_path($this->paths['apacheDir'], $httpdXamppPHP, '/') . '"' . PHP_EOL;
+
         @file_put_contents($httpdXampp, $newContent);
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
@@ -192,8 +195,8 @@ class Installer extends Application
     private function tryGetXamppDir()
     {
         $xamppDir = '';
+        $repeat   = 0;
 
-        $repeat = 0;
         while (! is_file(rtrim($xamppDir, '\\/') . '\xampp-control.exe')) {
             if ($repeat == 4) {
                 Console::line('You have not provided correct information multiple times.');
@@ -204,11 +207,14 @@ class Installer extends Application
                 $xamppDir = Console::ask('Enter the path to your Xampp directory');
             } else {
                 Console::line('The path provided is not the path to the actual Xampp directory.');
+
                 $xamppDir = Console::ask('Please provide it again');
             }
 
             Console::breakline();
+
             $xamppDir = str_replace('/', DS, $xamppDir);
+
             $repeat++;
         }
 
@@ -218,8 +224,8 @@ class Installer extends Application
     private function tryGetApacheDir()
     {
         $apacheDir = '';
+        $repeat    = 0;
 
-        $repeat = 0;
         while (! is_file(rtrim($apacheDir, '\\/') . '\bin\httpd.exe')) {
             if ($repeat == 4) {
                 Console::line('You have not provided correct information multiple times.');
@@ -230,11 +236,14 @@ class Installer extends Application
                 $apacheDir = Console::ask('Enter the path to your Apache directory');
             } else {
                 Console::line('The path provided is not the path to the actual Apache directory.');
+
                 $apacheDir = Console::ask('Please provide it again');
             }
 
             Console::breakline();
+
             $apacheDir = str_replace('/', DS, $apacheDir);
+
             $repeat++;
         }
 
@@ -244,8 +253,8 @@ class Installer extends Application
     private function tryGetPHPDir()
     {
         $phpDir = '';
-
         $repeat = 0;
+
         while (! is_file(rtrim($phpDir, '\\/') . '\php.exe')) {
             if ($repeat == 4) {
                 Console::line('You have not provided correct information multiple times.');
@@ -256,11 +265,14 @@ class Installer extends Application
                 $phpDir = Console::ask('Enter the path to your PHP directory');
             } else {
                 Console::line('The path provided is not the path to the actual PHP directory.');
+
                 $phpDir = Console::ask('Please provide it again');
             }
 
             Console::breakline();
+
             $phpDir = str_replace('/', DS, $phpDir);
+
             $repeat++;
         }
 

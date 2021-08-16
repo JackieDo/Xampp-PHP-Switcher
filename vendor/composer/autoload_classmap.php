@@ -6,10 +6,10 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Application' => $baseDir . '/support/Application.php',
-    'Console' => $baseDir . '/support/Console.php',
-    'Installer' => $baseDir . '/support/Installer.php',
-    'Setting' => $baseDir . '/support/Setting.php',
-    'Switcher' => $baseDir . '/support/Switcher.php',
-    'VersionRepository' => $baseDir . '/support/VersionRepository.php',
+    'PHPSwitcher\\Support\\Application' => $baseDir . '/src/Support/Application.php',
+    'PHPSwitcher\\Support\\Console' => $baseDir . '/src/Support/Console.php',
+    'PHPSwitcher\\Support\\Handler' => $baseDir . '/src/Support/Handler.php',
+    'PHPSwitcher\\Support\\Installer' => $baseDir . '/src/Support/Installer.php',
+    'PHPSwitcher\\Support\\Setting' => $baseDir . '/src/Support/Setting.php',
+    'PHPSwitcher\\Support\\VersionRepository' => $baseDir . '/src/Support/VersionRepository.php',
 );

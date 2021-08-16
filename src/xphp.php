@@ -1,6 +1,13 @@
 <?php
 
-require __DIR__.'/vendor/autoload.php';
+namespace PHPSwitcher;
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use PHPSwitcher\Support\Console;
+use PHPSwitcher\Support\Handler;
+use PHPSwitcher\Support\Installer;
+
 set_time_limit(0);
 
 if (! getenv('XPHP_APP_DIR')) {
@@ -14,9 +21,8 @@ $banner = PHP_EOL
     . "###################################################################################" . PHP_EOL
     . "#  Xampp PHP Switcher, switches between PHP versions for Xampp on Windows OS      #" . PHP_EOL
     . "#---------------------------------------------------------------------------------#" . PHP_EOL
-    . "#  Author: Jackie Do <anhvudo@gmail.com>                                          #" . PHP_EOL
-    . "#---------------------------------------------------------------------------------#" . PHP_EOL
-    . "#  License: MIT (c) Jackie Do <anhvudo@gmail.com>                                 #" . PHP_EOL
+    . "#  Author : Jackie Do <anhvudo@gmail.com>                                         #" . PHP_EOL
+    . "#  License: MIT (c)                                                               #" . PHP_EOL
     . "###################################################################################" . PHP_EOL;
 
 if (isset($_SERVER['argv'][1])) {
@@ -28,7 +34,7 @@ if (isset($_SERVER['argv'][1])) {
         Console::terminate(null, 0, true);
     }
 
-    $witcher = new Switcher;
+    $witcher = new Handler;
 
     switch ($_SERVER['argv'][1]) {
         case 'listVersions':

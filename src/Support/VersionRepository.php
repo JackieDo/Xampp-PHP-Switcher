@@ -1,8 +1,9 @@
 <?php
 
-if (! defined('DS')) {
-    define('DS', DIRECTORY_SEPARATOR);
-}
+namespace PHPSwitcher\Support;
+
+use Exception;
+use ReflectionProperty;
 
 class VersionRepository
 {
@@ -376,10 +377,10 @@ class VersionRepository
                 continue;
             }
 
-            $storagePath   = $location . DS . $item;
-            $storageConfig = $this->getStorageConfig($storagePath);
-            $hasBuildInfo  = array_key_exists('BuildInfo', $storageConfig);
-            $needUpdate    = false;
+            $storagePath    = $location . DS . $item;
+            $storageConfig  = $this->getStorageConfig($storagePath);
+            $hasBuildInfo   = array_key_exists('BuildInfo', $storageConfig);
+            $needUpdateInfo = false;
 
             if (!$hasBuildInfo || !array_key_exists('Version', $storageConfig['BuildInfo'])) {
                 $storageConfig['BuildInfo']['Version'] = get_version_phpdir($storagePath);
@@ -420,7 +421,7 @@ class VersionRepository
                 'compiler'     => $storageConfig['BuildInfo']['Compiler'],
                 'buildDate'    => $storageConfig['BuildInfo']['BuildDate'],
                 'zendVersion'  => $storageConfig['BuildInfo']['ZendVersion'],
-                'isAddOnBuild' => (bool) $storageConfig['RepoImporting']['AddOnBuild']
+                'isAddOnBuild' => array_key_exists('AddOnBuild', $storageConfig['RepoImporting']) ? (bool) $storageConfig['RepoImporting']['AddOnBuild'] : false
             ];
         }
 

@@ -7,21 +7,38 @@ namespace Composer\Autoload;
 class ComposerStaticInit055b685dedcc6004365c765297bf414d
 {
     public static $files = array (
-        'c29eefac81fd79d67abf9b3250174c75' => __DIR__ . '/../..' . '/support/helpers.php',
+        '7bbdf47b3eb480d6d156766a7f1c0b79' => __DIR__ . '/../..' . '/src/pre_defined.php',
+        '797a28cf5fafaaecbe83f3fd6d91719e' => __DIR__ . '/../..' . '/src/helpers.php',
+    );
+
+    public static $prefixLengthsPsr4 = array (
+        'P' => 
+        array (
+            'PHPSwitcher\\' => 12,
+        ),
+    );
+
+    public static $prefixDirsPsr4 = array (
+        'PHPSwitcher\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/src',
+        ),
     );
 
     public static $classMap = array (
-        'Application' => __DIR__ . '/../..' . '/support/Application.php',
-        'Console' => __DIR__ . '/../..' . '/support/Console.php',
-        'Installer' => __DIR__ . '/../..' . '/support/Installer.php',
-        'Setting' => __DIR__ . '/../..' . '/support/Setting.php',
-        'Switcher' => __DIR__ . '/../..' . '/support/Switcher.php',
-        'VersionRepository' => __DIR__ . '/../..' . '/support/VersionRepository.php',
+        'PHPSwitcher\\Support\\Application' => __DIR__ . '/../..' . '/src/Support/Application.php',
+        'PHPSwitcher\\Support\\Console' => __DIR__ . '/../..' . '/src/Support/Console.php',
+        'PHPSwitcher\\Support\\Handler' => __DIR__ . '/../..' . '/src/Support/Handler.php',
+        'PHPSwitcher\\Support\\Installer' => __DIR__ . '/../..' . '/src/Support/Installer.php',
+        'PHPSwitcher\\Support\\Setting' => __DIR__ . '/../..' . '/src/Support/Setting.php',
+        'PHPSwitcher\\Support\\VersionRepository' => __DIR__ . '/../..' . '/src/Support/VersionRepository.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
+            $loader->prefixLengthsPsr4 = ComposerStaticInit055b685dedcc6004365c765297bf414d::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit055b685dedcc6004365c765297bf414d::$prefixDirsPsr4;
             $loader->classMap = ComposerStaticInit055b685dedcc6004365c765297bf414d::$classMap;
 
         }, null, ClassLoader::class);

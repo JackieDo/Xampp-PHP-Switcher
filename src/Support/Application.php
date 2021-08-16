@@ -1,8 +1,6 @@
 <?php
 
-if (! defined('DS')) {
-    define('DS', DIRECTORY_SEPARATOR);
-}
+namespace PHPSwitcher\Support;
 
 class Application
 {
@@ -105,7 +103,7 @@ class Application
 
     protected function initAdditional()
     {
-        if (!$this->paths['xamppDir'] || !$this->paths['apacheDir'] || !$this->paths['phpDir']) {
+        if (!isset($this->paths['xamppDir']) || !isset($this->paths['apacheDir']) || !isset($this->paths['phpDir'])) {
             $this->detectXamppPaths();
         }
 
@@ -154,16 +152,18 @@ class Application
     private function defineAppPaths()
     {
         $appDir = realpath(getenv('XPHP_APP_DIR'));
+        $srcDir = $appDir . '\src';
         $tmpDir = getenv('XPHP_TMP_DIR');
 
         $this->paths['appDir']             = $appDir;
+        $this->paths['srcDir']             = $srcDir;
+        $this->paths['httpdXamppTemplate'] = $srcDir . '\Templates\xampp_config\httpd-xampp-php{{php_major_version}}.conf.tpl';
+        $this->paths['pathRegister']       = $srcDir . '\path_register.vbs';
+        $this->paths['powerExecutor']      = $srcDir . '\power_exec.vbs';
         $this->paths['tmpDir']             = $tmpDir;
-        $this->paths['httpdXamppTemplate'] = $appDir . '\templates\xampp_config\httpd-xampp.conf.tpl';
-        $this->paths['pathRegister']       = $appDir . '\support\PathRegister.vbs';
-        $this->paths['powerExecutor']      = $appDir . '\support\PowerExec.vbs';
 
-        if (! is_dir($this->paths['tmpDir'])) {
-            @mkdir($this->paths['tmpDir'], 0755, true);
+        if (! is_dir($tmpDir)) {
+            @mkdir($tmpDir, 0755, true);
         }
     }
 

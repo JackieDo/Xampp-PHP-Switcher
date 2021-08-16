@@ -1,14 +1,11 @@
 <?php
 
-if (! defined('DS')) {
-    define('DS', DIRECTORY_SEPARATOR);
-}
+namespace PHPSwitcher\Support;
 
-class Switcher extends Application
+class Handler extends Application
 {
     protected $currentStoragePath;
     protected $currentVersion;
-    protected $versions = [];
 
     public function __construct()
     {
@@ -25,12 +22,11 @@ class Switcher extends Application
         }
 
         $this->currentVersion = get_version_phpdir($this->paths['phpDir']);
-        $this->versions       = &$this->repository->versions;
     }
 
     public function showVersion($version = null)
     {
-        if ($version == 'current' || (empty($version) && count($this->versions) == 1)) {
+        if ($version == 'current' || (empty($version) && count($this->repository->versions) == 1)) {
             $version = $this->currentVersion;
             $message = 'The current PHP build has the following information:';
         } else {
@@ -38,21 +34,21 @@ class Switcher extends Application
             $message = 'The PHP build you require has the following information:';
         }
 
-        if (! array_key_exists($version, $this->versions)) {
+        if (! array_key_exists($version, $this->repository->versions)) {
             Console::terminate('Sorry! Do not found any PHP version that you entered.', 1);
         }
 
-        $architecture     = $this->versions[$version]['architecture'];
+        $architecture     = $this->repository->versions[$version]['architecture'];
         $isBuiltInVersion = $this->isBuiltInVersion($version);
 
         Console::line($message);
         Console::breakline();
         Console::line('Version      : ' . $version . ' ('. (($isBuiltInVersion) ? 'Built-in' : 'Add-on') . ' version)');
-        Console::line('Storage path : ' . $this->versions[$version]['storagePath']);
-        Console::line('Compiler     : ' . $this->versions[$version]['compiler']);
+        Console::line('Storage path : ' . $this->repository->versions[$version]['storagePath']);
+        Console::line('Compiler     : ' . $this->repository->versions[$version]['compiler']);
         Console::line('Architecture : ' . $architecture . ' bit (' . (($architecture == '32') ? 'x86' : 'x64') . ')');
-        Console::line('Build date   : ' . $this->versions[$version]['buildDate']);
-        Console::line('Zend version : ' . $this->versions[$version]['zendVersion']);
+        Console::line('Build date   : ' . $this->repository->versions[$version]['buildDate']);
+        Console::line('Zend version : ' . $this->repository->versions[$version]['zendVersion']);
 
         Console::breakline();
         Console::hrline();
@@ -61,7 +57,7 @@ class Switcher extends Application
 
     public function listVersions()
     {
-        $totalVersions = count($this->versions);
+        $totalVersions = count($this->repository->versions);
 
         if ($totalVersions == 1) {
             Console::line('There is only one PHP build in the repository as follows:');
@@ -73,15 +69,15 @@ class Switcher extends Application
 
         $maxLenVersion = max(array_map(function($item) {
             return strlen($item);
-        }, array_keys($this->versions)));
+        }, array_keys($this->repository->versions)));
 
         $maxLenStoragePath = max(array_map(function($item) {
             return strlen($item['storagePath']);
-        }, $this->versions));
+        }, $this->repository->versions));
 
         $count = 0;
 
-        foreach ($this->versions as $version => $info) {
+        foreach ($this->repository->versions as $version => $info) {
             $isBuiltInVersion = $this->isBuiltInVersion($version);
 
             $col_1_content = str_pad(++$count, strlen($totalVersions), ' ', STR_PAD_LEFT) . '.  ';
@@ -112,7 +108,7 @@ class Switcher extends Application
 
     public function addVersion($source = null)
     {
-        // Verify compatibility
+        // Compatibility verification
         if (! $source) {
             Console::line('Please provide the path to new Xampp PHP directory you want to add.');
             $source = Console::ask('Enter the path');
@@ -127,6 +123,7 @@ class Switcher extends Application
         }
 
         $architecture = get_architecture_phpdir($source);
+
         if ($architecture != $this->repository->architecture) {
             Console::line('The directory that you provided is not compatible with your Xampp.');
             Console::line('Cancel the adding process.');
@@ -135,13 +132,38 @@ class Switcher extends Application
         }
 
         $version = get_version_phpdir($source);
-        if (array_key_exists($version, $this->versions)) {
+
+        if (array_key_exists($version, $this->repository->versions)) {
             Console::line('The directory you provided contains the PHP version you already have.');
             Console::line('No need to add this version.');
             Console::breakline();
             Console::terminate();
         }
 
+        $needBuildConfig    = false;
+        $phpMajorVersion    = get_major_phpversion($version);
+        $configFile         = str_replace('{{php_major_version}}', $phpMajorVersion, $this->paths['httpdXamppPHP']);
+        $configTemplateFile = str_replace('{{php_major_version}}', $phpMajorVersion, $this->paths['httpdXamppTemplate']);
+        $configSourceFile   = realpath($source . '\..\apache\conf\extra\httpd-xampp.conf');
+
+        if (! is_file($configFile)) {
+            $needBuildConfig = true;
+
+            if (is_file($configTemplateFile)) {
+                $configContent = @file_get_contents($configTemplateFile);
+                $configContent = str_replace('{{xamppDir}}', unixstyle_path($this->paths['xamppDir']), $configContent);
+            } elseif (is_file($configSourceFile)) {
+                $configContent = @file_get_contents($configSourceFile);
+                $configContent = preg_replace('/(\"|\')\/xampp/', '${1}' . unixstyle_path($this->paths['xamppDir']), $configContent);
+            } else {
+                Console::line('This PHP version is not supported yet.');
+                Console::line('Cancel the adding process.');
+                Console::breakline();
+                Console::terminate();
+            }
+        }
+
+        // Adding confirmation
         $compiler    = get_compiler_phpdir($source);
         $buildDate   = get_builddate_phpdir($source);
         $zendVersion = get_zendversion_phpdir($source);
@@ -150,7 +172,7 @@ class Switcher extends Application
         Console::breakline();
         Console::line('Version      : ' . $version);
         Console::line('Compiler     : ' . $compiler);
-        Console::line('Architecture : ' . $architecture . ' bit');
+        Console::line('Architecture : ' . $architecture . ' bit (' . (($architecture == '32') ? 'x86' : 'x64') . ')');
         Console::line('Build date   : ' . $buildDate);
         Console::line('Zend version : ' . $zendVersion);
         Console::breakline();
@@ -186,7 +208,7 @@ class Switcher extends Application
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
         // Standardize paths
-        $message = 'Standardize paths in new PHP build to be compatible with Xampp...';
+        $message = 'Standardize paths in new PHP build to work correctly with your Xampp...';
         Console::line($message, false);
 
         $storagePath   = $importResult['data']['storagePath'];
@@ -228,18 +250,14 @@ class Switcher extends Application
         Console::line('Successful', true, max(73 - strlen($message), 1));
 
         // Create httpd-xamm-php{{php_major_version}}.conf
-        $message = 'Creating the "httpd-xampp.conf" file specific to the new PHP build...';
-        Console::line($message, false);
+        if ($needBuildConfig) {
+            $message = 'Creating the "httpd-xampp.conf" file specific to the new PHP build...';
+            Console::line($message, false);
 
-        $phpMajorVersion = get_major_phpversion($version);
-        $configFile      = str_replace('{{php_major_version}}', $phpMajorVersion, $this->paths['httpdXamppPHP']);
+            @file_put_contents($configFile, $configContent);
 
-        if (! is_file($configFile)) {
-            $configContent = @file_get_contents($this->paths['httpdXamppTemplate']);
-            @file_put_contents($configFile, str_replace('{{php_major_version}}', $phpMajorVersion, $configContent));
+            Console::line('Successful', true, max(73 - strlen($message), 1));
         }
-
-        Console::line('Successful', true, max(73 - strlen($message), 1));
 
         // Notify adding result
         Console::breakline();
@@ -265,7 +283,7 @@ class Switcher extends Application
     {
         $version = $this->getVersionOrList($version, 'You can choose one of the following builds to remove:', false);
 
-        if (! array_key_exists($version, $this->versions)) {
+        if (! array_key_exists($version, $this->repository->versions)) {
             Console::terminate('Sorry! Do not found any PHP version that you entered.', 1);
         }
 
@@ -292,7 +310,7 @@ class Switcher extends Application
         $message = 'Deleting main PHP binary file of the build...';
         Console::line($message, false);
 
-        $storagePath  = $this->versions[$version]['storagePath'];
+        $storagePath  = $this->repository->versions[$version]['storagePath'];
         $removePHPBin = @unlink($storagePath . '\php.exe');
 
         if (! $removePHPBin) {
@@ -337,7 +355,7 @@ class Switcher extends Application
     {
         $version = $this->getVersionOrList($version, 'You can choose one of the following builds to switch to:', false);
 
-        if (! array_key_exists($version, $this->versions)) {
+        if (! array_key_exists($version, $this->repository->versions)) {
             Console::terminate('Sorry! Do not found any PHP version that you entered.', 1);
         }
 
@@ -398,7 +416,7 @@ class Switcher extends Application
 
         // Update current version info
         $this->currentVersion     = $version;
-        $this->currentStoragePath = $this->versions[$version]['storagePath'];
+        $this->currentStoragePath = $this->repository->versions[$version]['storagePath'];
 
         // Show result of task
         Console::breakline();
@@ -450,14 +468,14 @@ class Switcher extends Application
 
         $maxLenVersion = max(array_map(function($item) {
             return strlen($item);
-        }, array_keys($this->versions)));
+        }, array_keys($this->repository->versions)));
 
         $maxLenStoragePath = max(array_map(function($item) {
             return strlen($item['storagePath']);
-        }, $this->versions));
+        }, $this->repository->versions));
 
         foreach ($options as $optionId => $version) {
-            $storagePath = $this->versions[$version]['storagePath'];
+            $storagePath = $this->repository->versions[$version]['storagePath'];
 
             $col_1_content = str_pad('[' . $optionId . ']', strlen($totalOption) + 2, ' ', STR_PAD_LEFT) . '  ';
             $col_2_content = 'Version ' . str_pad($version, $maxLenVersion + 2);
@@ -516,7 +534,7 @@ class Switcher extends Application
         $options  = [];
         $startNum = 1;
 
-        foreach ($this->versions as $version => $info) {
+        foreach ($this->repository->versions as $version => $info) {
             if ($includeCurrent) {
                 $options[$startNum++] = $version;
             } else {
@@ -536,17 +554,21 @@ class Switcher extends Application
 
     private function isBuiltInVersion($version)
     {
-        return (! $this->versions[$version]['isAddOnBuild']);
+        return (! $this->repository->versions[$version]['isAddOnBuild']);
     }
 
     private function prepareStandardizeList()
     {
-        $list = [];
+        $list     = [];
+        $listFile = $this->paths['srcDir'] . '\need_standardize.lst';
 
-        if (is_file($this->paths['appDir'] . '\need_standardize.lst')) {
+        if (is_file($listFile)) {
             $autodetect = ini_get('auto_detect_line_endings');
+
             ini_set('auto_detect_line_endings', '1');
-            $list = file($this->paths['appDir'] . '\need_standardize.lst', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+            $list = file($listFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
             ini_set('auto_detect_line_endings', $autodetect);
         }
 

@@ -1,8 +1,6 @@
 <?php
 
-if (! defined('DS')) {
-    define('DS', DIRECTORY_SEPARATOR);
-}
+namespace PHPSwitcher\Support;
 
 class Setting
 {

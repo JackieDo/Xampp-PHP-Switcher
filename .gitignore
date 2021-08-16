@@ -1,4 +1,3 @@
-/templates/xampp_config/*
 /vendor/*
 !/vendor/composer
 !/vendor/autoload.php

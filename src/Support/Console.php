@@ -1,5 +1,7 @@
 <?php
 
+namespace PHPSwitcher\Support;
+
 class Console
 {
     protected static $defaultMessages = [

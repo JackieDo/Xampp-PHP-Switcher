@@ -24,17 +24,17 @@ Examples:
     xphp info current
     - Will show information about the current PHP build.
 
-    xphp show 7.1.9
+    xphp info 7.1.9
     - Will show information about the PHP build that has
       version "7.1.9"
 
-    xphp switch 5.6.40
-    - Will switch PHP version from the current version
-      to version 5.6.40
+    xphp info
+    - Will be asked to choose one version from the list
+      to view detail information.
 
     xphp switch
     - Will be asked to choose one version from the list
       to switching.
 
-    xphp add X:\path\to\another\php\build
+    xphp add "X:\path\to\another\xampp-php-directory"
     - Will add another compatible PHP build into repository.

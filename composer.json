@@ -16,11 +16,12 @@
     },
     "autoload": {
         "files": [
-            "support/helpers.php"
+            "src/pre_defined.php",
+            "src/helpers.php"
         ],
-        "classmap": [
-            "support"
-        ]
+        "psr-4": {
+            "PHPSwitcher\\": "src/"
+        }
     },
     "scripts": {
         "post-create-project-cmd": [
