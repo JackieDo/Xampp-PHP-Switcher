@@ -32,7 +32,7 @@ Look at one of the following topics to learn more about Xampp PHP Switcher.
   - [Updation](#updation)
   - [Add other PHP versions to your Xampp](#add-other-php-versions-to-your-xampp)
     - [Important notes](#important-notes)
-    - [Now, let's do the following step by step](#now-lets-do-the-following-step-by-step)
+    - [Step by step process of adding build](#step-by-step-process-of-adding-build)
       - [Check architectural information of the current build](#check-architectural-information-of-the-current-build)
       - [Download compatible PHP builds](#download-compatible-php-builds)
       - [Add recent downloaded PHP build](#add-recent-downloaded-php-build)
@@ -99,7 +99,7 @@ After successfully installing Xampp PHP Switcher, by default you will have a bui
 * Only add builds downloaded from the Xampp official website, or builds that have been added to the Xampp PHP Switcher repository.
 * Only builds with the same architecture (32 or 64 bit runtime) may be added to the current build.
 
-### Now, let's do the following step by step
+### Step by step process of adding build
 #### Check architectural information of the current build
 Execute the following command:
 
