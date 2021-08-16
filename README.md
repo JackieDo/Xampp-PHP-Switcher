@@ -144,7 +144,9 @@ When we use the `xphp add` command, Xampp PHP Switcher will do the following:
 * Create a file named "xampp-httpd-php(x).conf" (x is the corresponding PHP major-version) so that Apache in your Xampp can handle the new PHP build. Based on that, you can switch between different PHP versions.
 
 ### Update the process of adding PHP builds in the future
-The process of standardize paths is done based on a file named "need_standardize.lst" located in the "src" folder of project directory. Currently, this file has supported the path standardization for PHP builds from versions 5.4 (Xampp 1.8.3) to 8.0 (Xampp 8.0.x). Every time a new version of Xampp is released, this file will be checked and updated. You only need to copy the whole new content of this file and overwrite your existing file in your Xampp PHP Switcher directory. Or you can download the project source code [here](https://github.com/JackieDo/Xampp-PHP-Switcher/releases/latest) and extract (overwrite) to your Xampp PHP Switcher directory.
+The process of standardize paths is done based on a file named "need_standardize.lst" located in the "src" folder of project directory. Currently, this file has supported the path standardization for PHP builds from versions 5.4 (Xampp 1.8.3) to 8.0 (Xampp 8.0.x).
+
+Every time a new version of Xampp is released, this file will be checked and updated. You only need to copy the whole new content of this file and overwrite your existing file in your Xampp PHP Switcher directory. Or you proceed to update Xampp PHP Switcher according to the instructions [here](https://github.com/JackieDo/Xampp-PHP-Switcher#updation).
 
 ## Usage
 Because of a path to the Xampp PHP Switcher application directory has been added to the Windows Path Environment Variables during the installation process, now you can just open the terminal `(no need to open in Administrator mode anymore)` anywhere and excute one of the following `xphp` commands:
